@@ -1,0 +1,66 @@
+/* ──────────────────────────────────────────────
+   Triton Kernel Visualizer  ─  Control Panel
+────────────────────────────────────────────── */
+
+/* 整個上方工具列 */
+.control-panel {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  gap: 0.75rem;
+  background: #1e1e1e;   /* 深色背景 */
+  color: #eee;
+  border-bottom: 1px solid #444;
+  font-family: sans-serif;
+  /* 若希望工具列固定在容器頂端：
+     position: sticky; top: 0; z-index: 5; */
+}
+
+/* 內部控制群組（保留彈性換行） */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ▶ Play 按鈕 */
+#play {
+  background: #3a6e78;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+#play:hover { background: #468a96; }
+
+/* Epoch 輸入框 */
+#epoch {
+  width: 6ch;            /* 與 size=6 對齊 */
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #eee;
+  font-family: monospace;
+}
+
+/* 三個 <select> 下拉 */
+.controls select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #eee;
+}
+
+/* 焦點時 outline 移除，改用邊框高亮 */
+button:focus,
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #3a6e78;
+}

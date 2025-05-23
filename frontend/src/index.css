@@ -1,0 +1,69 @@
+/* ========= GLOBAL THEME ========= */
+:root {
+  --bg-main:      #0b0f13;
+  --bg-panel:     #13171d;
+  --bg-card:      #1a1f25;
+  --bg-console:   var(--bg-card);
+
+  --text-primary: #e8eaed;
+  --text-muted:   #9aa0a6;
+
+  --brand-green:  #00c67c;
+  --btn-blue:     #2979ff;
+  --btn-green:    #18c964;
+  --badge-gold:   #f1c40f;
+  --badge-blue:   #3969d6;
+  --badge-purple: #6f52ff;
+
+  --border-color: #2e343e;
+  --radius: 6px;
+}
+
+/* ===== Reset & Layout ===== */
+html, body, #root { height: 100%; margin: 0; }
+body {
+  padding: 0.75rem;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  box-sizing: border-box;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar          { width: 8px; }
+::-webkit-scrollbar-track    { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb    { background: #555; border-radius: 4px; }
+
+/* ===== Utility ===== */
+.btn { border:none; padding:4px 14px; font-weight:600; border-radius:var(--radius); cursor:pointer; }
+.btn-blue  { background:var(--btn-blue);  color:#fff; }
+.btn-green { background:var(--btn-green); color:#fff; }
+.btn-red   { background:#d33;             color:#fff; }
+
+.card { background:var(--bg-card); border-radius:var(--radius); padding:1rem; }
+
+.badge{font-size:12px;padding:2px 6px;border-radius:var(--radius);color:#fff;}
+.badge-blue{background:var(--badge-blue);}
+.badge-gold{background:var(--badge-gold);color:#000;}
+.badge-purple{background:var(--badge-purple);}
+
+/* ===== Editor ===== */
+/* 只留背景，完全移除對文字顏色的強制覆蓋 */
+.cm-editor,
+.cm-scroller,
+.monaco-editor,
+.monaco-editor .margin,
+.monaco-editor-background{
+  background: var(--bg-card) !important;
+}
+
+/* 行號顏色保留淡灰即可，看個人喜好 */
+.cm-gutters,
+.margin-view-overlays{
+  background: var(--bg-card) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Console */
+.console-log   { color: var(--brand-green); white-space: pre-wrap; }
+.console-error { color: #ff5c5c;            white-space: pre-wrap; }
