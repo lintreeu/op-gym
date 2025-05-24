@@ -1,0 +1,35 @@
+.visible .entry addvec(float*, float*, float*, int)(
+    .param .u64 A,
+    .param .u64 B,
+    .param .u64 C,
+    .param .u32 N
+)
+{
+    ld.param.u64 %rdA, [A];
+    ld.param.u64 %rdB, [B];
+    ld.param.u64 %rdC, [C];
+    ld.param.u32 %rN,  [N];
+
+    cvta.to.global.u64 %rdA1, %rdA;
+    cvta.to.global.u64 %rdB1, %rdB;
+    cvta.to.global.u64 %rdC1, %rdC;
+
+    mov.u32 %r0, %ctaid.x;
+    mov.u32 %r1, %ntid.x;
+    mov.u32 %r2, %tid.x;
+    mad.lo.s32 %rI, %r0, %r1, %r2;
+    setp.ge.s32 %p0, %rI, %rN;
+    @%p0 bra END;
+
+    mul.wide.s32 %rdOff, %rI, 4;
+    add.s64 %rd7, %rdA1, %rdOff;
+    add.s64 %rd8, %rdB1, %rdOff;
+    add.s64 %rd9, %rdC1, %rdOff;
+
+    ld.global.f32 %fA, [%rd7];
+    ld.global.f32 %fB, [%rd8];
+    add.f32 %fC, %fA, %fB;
+    st.global.f32 [%rd9], %fC;
+END:
+    ret;
+}

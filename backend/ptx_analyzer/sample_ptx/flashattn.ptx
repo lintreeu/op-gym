@@ -1,0 +1,95 @@
+.visible .entry flash_attention_kernel(float const*, float const*, float const*, float*, int, int)(
+        .param .u64 flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_0,
+        .param .u64 flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_1,
+        .param .u64 flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_2,
+        .param .u64 flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_3,
+        .param .u32 flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_4,
+        .param .u32 flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_5
+)
+{
+
+        ld.param.u64    %rd4, [flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_0];
+        ld.param.u64    %rd5, [flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_1];
+        ld.param.u64    %rd6, [flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_3];
+        ld.param.u32    %r14, [flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_4];
+        ld.param.u32    %r15, [flash_attention_kernel(float const*, float const*, float const*, float*, int, int)_param_5];
+        mov.u32         %r1, %ctaid.x;
+        mov.u32         %r29, %tid.x;
+        setp.ge.s32     %p1, %r29, %r15;
+        @%p1 bra        $L__BB0_3;
+
+        mul.lo.s32      %r3, %r1, %r15;
+        mov.u32         %r4, %ntid.x;
+        cvta.to.global.u64      %rd1, %rd4;
+        mov.u32         %r28, %r29;
+
+$L__BB0_2:
+        add.s32         %r16, %r28, %r3;
+        mul.wide.s32    %rd7, %r16, 4;
+        add.s64         %rd8, %rd1, %rd7;
+        ld.global.nc.f32        %f4, [%rd8];
+        shl.b32         %r17, %r28, 2;
+        mov.u32         %r18, shared;
+        add.s32         %r19, %r18, %r17;
+        st.shared.f32   [%r19], %f4;
+        add.s32         %r28, %r28, %r4;
+        setp.lt.s32     %p2, %r28, %r15;
+        @%p2 bra        $L__BB0_2;
+
+$L__BB0_3:
+        bar.sync        0;
+        setp.gt.s32     %p3, %r14, 0;
+        @%p3 bra        $L__BB0_8;
+        bra.uni         $L__BB0_4;
+
+$L__BB0_8:
+        mov.f32         %f10, 0f00000000;
+        @%p1 bra        $L__BB0_11;
+
+        mov.u32         %r11, %ntid.x;
+        cvta.to.global.u64      %rd3, %rd5;
+        mov.f32         %f10, 0f00000000;
+        mov.u32         %r23, shared;
+
+$L__BB0_10:
+        mul.wide.s32    %rd11, %r29, 4;
+        add.s64         %rd12, %rd3, %rd11;
+        ld.global.nc.f32        %f7, [%rd12];
+        shl.b32         %r22, %r29, 2;
+        add.s32         %r24, %r23, %r22;
+        ld.shared.f32   %f8, [%r24];
+        fma.rn.f32      %f10, %f8, %f7, %f10;
+        add.s32         %r29, %r29, %r11;
+        setp.lt.s32     %p7, %r29, %r15;
+        @%p7 bra        $L__BB0_10;
+
+$L__BB0_11:
+        shl.b32         %r25, %r15, 2;
+        mov.u32         %r26, shared;
+        add.s32         %r27, %r26, %r25;
+        st.shared.f32   [%r27], %f10;
+        trap;
+
+$L__BB0_4:
+        bar.sync        0;
+        bar.sync        0;
+        @%p1 bra        $L__BB0_7;
+
+        mul.lo.s32      %r7, %r1, %r15;
+        mov.u32         %r8, %ntid.x;
+        cvta.to.global.u64      %rd2, %rd6;
+
+$L__BB0_6:
+        add.s32         %r20, %r29, %r7;
+        mul.wide.s32    %rd9, %r20, 4;
+        add.s64         %rd10, %rd2, %rd9;
+        mov.u32         %r21, 0;
+        st.global.u32   [%rd10], %r21;
+        add.s32         %r29, %r29, %r8;
+        setp.lt.s32     %p5, %r29, %r15;
+        @%p5 bra        $L__BB0_6;
+
+$L__BB0_7:
+        ret;
+
+}
