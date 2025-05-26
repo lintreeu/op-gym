@@ -311,17 +311,22 @@ def _analyze_mem(blocks, alias):
     for bb in blocks:
         for ins in bb.instrs:
             eng.handle(ins)
-
+            
             if ins.opcode.startswith(("ld.global", "st.global")):
+
                 kind = "load" if ins.opcode.startswith("ld.") else "store"
                 eltype = _extract_type(ins.opcode)
                 elsize = ELEMENT_SIZE.get(eltype, 4)
 
-                # [%...]
-                m = re.search(r"\[(.+)\]", ins.operands[1])
+                # 確認 memory address 是在第幾個 operand
+                addr_operand_idx = 1 if kind == "load" else 0
+                if addr_operand_idx >= len(ins.operands):
+                    continue
+                m = re.search(r"\[(.+)\]", ins.operands[addr_operand_idx])
                 if not m:
                     continue
                 addr_expr = m.group(1).strip()
+
 
                 # 支援 [%rd + imm]
                 if "+" in addr_expr:
@@ -367,6 +372,7 @@ def _analyze_mem(blocks, alias):
                         raw=ins.raw,
                     )
                 )
+    print(result)
     return result
 
 

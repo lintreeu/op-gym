@@ -1,105 +1,103 @@
-import { useEffect } from "react";
+import React, { useState } from 'react';
 
-export default function CudaBlockVisualizer() {
-  useEffect(() => {
-    const matrixSize = 512;
-    const colChunk = 8;
-    const displayCols = matrixSize / colChunk;
-    const matrixEl = document.getElementById("matrix");
-    const gridSlider = document.getElementById("gridIndex");
-    const gridValText = document.getElementById("gridValue");
-    const blockSizeSelect = document.getElementById("blockSize");
+function safeEval(expr, context) {
+  try {
+    const func = new Function(...Object.keys(context), `return ${expr};`);
+    return func(...Object.values(context));
+  } catch {
+    return null;
+  }
+}
 
-    let cells = [];
+export default function CudaBlockVisualizer({ memAccess, blockDim, blockIdx, basePos }) {
+  const [activeTab, setActiveTab] = useState('load');
+  const filteredAccess = memAccess.filter(acc => acc.kind === activeTab);
 
-    function createMatrix() {
-      matrixEl.innerHTML = "";
-      cells = [];
-      for (let row = 0; row < matrixSize; row++) {
-        let rowCells = [];
-        for (let col = 0; col < displayCols; col++) {
-          const div = document.createElement("div");
-          div.classList.add("cell");
-          matrixEl.appendChild(div);
-          rowCells.push(div);
-        }
-        cells.push(rowCells);
+  const width = 32;
+  const height = 16;
+  const total = width * height;
+
+  const highlightIndices = new Set();
+
+  const context = {
+    blockDim, blockIdx,
+    threadIdx: { x: 0, y: 0, z: 0 },
+    element_size_f32: 1,
+    element_size_f64: 1,
+    element_size_u32: 1,
+    element_size_u64: 1,
+    element_size_s32: 1,
+    element_size_s64: 1,
+    arg0: 0, arg1: 0, arg3: 0, arg5: 4
+  };
+
+  for (let tid = 0; tid < blockDim.x; tid++) {
+    context.threadIdx.x = tid;
+
+    for (const acc of filteredAccess) {
+      const expr = acc.offset || '0';
+      const offset = safeEval(expr, context);
+      if (typeof offset === 'number') {
+        highlightIndices.add(offset);
       }
     }
-
-    function updateHighlight() {
-      const blockSize = parseInt(blockSizeSelect.value);
-      const gridIdx = parseInt(gridSlider.value);
-      gridValText.textContent = gridIdx;
-
-      for (let row = 0; row < matrixSize; row++) {
-        for (let col = 0; col < displayCols; col++) {
-          cells[row][col].classList.remove("highlight-row", "highlight-block");
-        }
-      }
-
-      for (let col = 0; col < displayCols; col++) {
-        cells[gridIdx][col].classList.add("highlight-row");
-      }
-
-      for (let tid = 0; tid < blockSize; tid++) {
-        const featureIdx = tid;
-        const visualCol = Math.floor(featureIdx / colChunk);
-        if (visualCol < displayCols) {
-          cells[gridIdx][visualCol].classList.add("highlight-block");
-        }
-      }
-    }
-
-    gridSlider.addEventListener("input", updateHighlight);
-    blockSizeSelect.addEventListener("change", updateHighlight);
-
-    createMatrix();
-    updateHighlight();
-  }, []);
+  }
 
   return (
-    <div style={{ fontFamily: "sans-serif", margin: "20px" }}>
-      <h2>CUDA Kernel - Block 可視化</h2>
-
-      <div className="controls" style={{ marginBottom: "20px" }}>
-        <label htmlFor="blockSize">Block Size:</label>
-        <select id="blockSize" defaultValue="32">
-          <option value="16">16</option>
-          <option value="32">32</option>
-          <option value="64">64</option>
-        </select>
-
-        <label htmlFor="gridIndex" style={{ marginLeft: "20px" }}>
-          Grid Index (Row):
-        </label>
-        <input type="range" id="gridIndex" min="0" max="511" defaultValue="0" />
-        <span id="gridValue">0</span>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
+        {['load', 'store'].map(kind => (
+          <button
+            key={kind}
+            onClick={() => setActiveTab(kind)}
+            style={{
+              padding: '4px 12px',
+              backgroundColor: activeTab === kind ? '#1a73e8' : '#e8eaed',
+              color: activeTab === kind ? 'white' : '#444',
+              border: 'none',
+              marginRight: '6px',
+              borderRadius: '4px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            {kind.toUpperCase()}
+          </button>
+        ))}
       </div>
 
+      {/* Visual Grid */}
       <div
-        id="matrix"
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(64, 8px)",
-          gridTemplateRows: "repeat(512, 8px)",
-          gap: "1px",
+          display: 'grid',
+          gridTemplateColumns: `repeat(${width}, 10px)`,
+          gridTemplateRows: `repeat(${height}, 10px)`,
+          gap: '1px',
+          background: '#ccc',
+          padding: '4px',
+          flexGrow: 1,
+          overflow: 'auto'
         }}
-      ></div>
-
-      <style>{`
-        .cell {
-          width: 8px;
-          height: 8px;
-          background-color: #eee;
-        }
-        .highlight-row {
-          background-color: #ffe08a;
-        }
-        .highlight-block {
-          background-color: #66c2ff;
-        }
-      `}</style>
+      >
+        {Array.from({ length: total }).map((_, idx) => {
+          const globalIdx = idx + basePos.x;
+          const isActive = highlightIndices.has(globalIdx);
+          return (
+            <div
+              key={idx}
+              style={{
+                width: 10,
+                height: 10,
+                backgroundColor: isActive ? '#66c2ff' : '#f5f5f5',
+                border: '1px solid #ddd',
+                boxSizing: 'border-box'
+              }}
+              title={`offset: ${globalIdx}`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -60,7 +60,7 @@ async def compile_cuda(
         "compiler": "nvcc126u2",
         "options": {
             "userArguments": user_arguments or "-Xptxas -v",
-            "filters": filters
+            "filters": filters.model_dump() if filters else {}
             or {
                 "binary": False,
                 "binaryObject": False,
@@ -76,6 +76,7 @@ async def compile_cuda(
         "bypassCache": 0,
         "allowStoreCodeDebug": True,
     }
+
 
     try:
         async with httpx.AsyncClient(timeout=120) as client:
