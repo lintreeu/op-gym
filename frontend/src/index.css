@@ -1,32 +1,20 @@
-/* ========= GLOBAL THEME ========= */
-:root {
-  --bg-main:      #0b0f13;
-  --bg-panel:     #13171d;
-  --bg-card:      #1a1f25;
-  --bg-console:   var(--bg-card);
-
-  --text-primary: #e8eaed;
-  --text-muted:   #9aa0a6;
-
-  --brand-green:  #00c67c;
-  --btn-blue:     #2979ff;
-  --btn-green:    #18c964;
-  --badge-gold:   #f1c40f;
-  --badge-blue:   #3969d6;
-  --badge-purple: #6f52ff;
-
-  --border-color: #2e343e;
-  --radius: 6px;
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: #f7f7f7;
+  color: #222;
+  overflow: hidden;
 }
 
-/* ===== Reset & Layout ===== */
-html, body, #root { height: 100%; margin: 0; }
-body {
+pre {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
   padding: 0.75rem;
-  background: var(--bg-main);
-  color: var(--text-primary);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  box-sizing: border-box;
+  font-size: 14px;
+  overflow: auto;
 }
 
 /* Scrollbar */
