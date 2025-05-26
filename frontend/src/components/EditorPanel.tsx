@@ -21,7 +21,7 @@ export default function EditorPanel({ defaultCode }: EditorPanelProps) {
     const payload = {
       source_code: code,
       user_arguments: '',
-      mode: 'parsed',
+      mode: 'mem',
     };
 
     try {

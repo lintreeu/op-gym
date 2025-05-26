@@ -1,6 +1,6 @@
 import React from 'react';
 
-const InputBox = ({ value, onChange }) => (
+const InputBox = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => (
   <input
     type="number"
     value={value}
@@ -17,7 +17,19 @@ const InputBox = ({ value, onChange }) => (
   />
 );
 
-const RangeSlider = ({ label, value, min = 0, max = 128, onChange }) => (
+const RangeSlider = ({
+  label,
+  value,
+  min = 0,
+  max = 128,
+  onChange
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  onChange: (v: number) => void;
+}) => (
   <div style={{ marginBottom: '1.5rem' }}>
     <label
       style={{
@@ -47,11 +59,23 @@ const RangeSlider = ({ label, value, min = 0, max = 128, onChange }) => (
   </div>
 );
 
+interface Props {
+  blockDim: { x: number; y: number; z: number };
+  blockIdx: { x: number; y: number; z: number };
+  base: { x: number; y: number; z: number };
+  setBlockDim: (v: { x: number; y: number; z: number }) => void;
+  setBlockIdx: (v: { x: number; y: number; z: number }) => void;
+  setBase: (v: { x: number; y: number; z: number }) => void;
+  params?: Record<string, number>;
+  setParams?: (p: Record<string, number>) => void;
+}
+
 export default function MemControlPanel({
-  blockDim, blockIdx, basePos,
-  setBlockDim, setBlockIdx, setBasePos
-}) {
-  // 總 Index 條（單一 slider 控制 3D blockIdx 對應的 linear index）
+  blockDim, blockIdx, base,
+  setBlockDim, setBlockIdx, setBase,
+  params = {},
+  setParams = () => {}
+}: Props) {
   const maxLinearIdx = blockDim.x * blockDim.y * blockDim.z - 1;
   const currentLinear =
     blockIdx.z * blockDim.y * blockDim.x +
@@ -68,7 +92,7 @@ export default function MemControlPanel({
   return (
     <div
       style={{
-        width: '280px',
+        width: '200px',
         padding: '1.5rem',
         background: '#f8f9fa',
         borderRight: '1px solid #e0e0e0',
@@ -78,14 +102,16 @@ export default function MemControlPanel({
         fontFamily: 'Arial, sans-serif'
       }}
     >
-      <h4 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '1rem', color: '#5f6368' }}>Control</h4>
+      <h4 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '1rem', color: '#5f6368' }}>
+        Control
+      </h4>
 
       {/* BlockDim */}
       <RangeSlider label="blockDim.x" value={blockDim.x} onChange={v => setBlockDim({ ...blockDim, x: v })} />
       <RangeSlider label="blockDim.y" value={blockDim.y} onChange={v => setBlockDim({ ...blockDim, y: v })} />
       <RangeSlider label="blockDim.z" value={blockDim.z} onChange={v => setBlockDim({ ...blockDim, z: v })} />
 
-      {/* blockIdx 3D 統一 slider */}
+      {/* blockIdx slider */}
       <div style={{ marginBottom: '1.5rem' }}>
         <label
           style={{
@@ -114,24 +140,30 @@ export default function MemControlPanel({
         />
         <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
           <div>
-            x:
-            <InputBox value={blockIdx.x} onChange={x => setBlockIdx({ ...blockIdx, x })} />
+            x: <InputBox value={blockIdx.x} onChange={x => setBlockIdx({ ...blockIdx, x })} />
           </div>
           <div>
-            y:
-            <InputBox value={blockIdx.y} onChange={y => setBlockIdx({ ...blockIdx, y })} />
+            y: <InputBox value={blockIdx.y} onChange={y => setBlockIdx({ ...blockIdx, y })} />
           </div>
           <div>
-            z:
-            <InputBox value={blockIdx.z} onChange={z => setBlockIdx({ ...blockIdx, z })} />
+            z: <InputBox value={blockIdx.z} onChange={z => setBlockIdx({ ...blockIdx, z })} />
           </div>
         </div>
       </div>
 
-      {/* Base Position */}
-      {/* <RangeSlider label="base.x" value={basePos.x} onChange={v => setBasePos({ ...basePos, x: v })} />
-      <RangeSlider label="base.y" value={basePos.y} onChange={v => setBasePos({ ...basePos, y: v })} />
-      <RangeSlider label="base.z" value={basePos.z} onChange={v => setBasePos({ ...basePos, z: v })} /> */}
+      {/* Param 控制區塊 */}
+      <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '0.5rem', color: '#5f6368' }}>
+        Parameters
+      </h4>
+      {Object.entries(params).map(([key, value]) => (
+        <div key={key} style={{ marginBottom: '0.75rem', fontSize: '13px' }}>
+          <label>{key}:</label>
+          <InputBox
+            value={value}
+            onChange={(v) => setParams({ ...params, [key]: v })}
+          />
+        </div>
+      ))}
     </div>
   );
 }

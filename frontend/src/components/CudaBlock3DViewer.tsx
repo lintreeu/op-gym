@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { evaluateAccessOffsets, type Access, type Dim3 } from '../utils/evaluateAccessOffsets';
 
 function Cube({
   x, y, z,
@@ -26,57 +27,79 @@ function Cube({
           transparent
         />
       </mesh>
-
       {highlight && (
         <lineSegments geometry={edgeGeom}>
-          <lineBasicMaterial attach="material" color="#000" linewidth={1} />
+          <lineBasicMaterial attach="material" color="#000" />
         </lineSegments>
       )}
     </group>
   );
 }
 
+interface Props {
+  accesses: Access[];
+  blockDim: Dim3;
+  blockIdx: Dim3;
+  params: Record<string, number>;
+  baseSize: number;
+  activeKind?: 'load' | 'store'; // optional filter
+}
+
 export default function CudaBlock3DViewer({
+  accesses,
   blockDim,
   blockIdx,
+  params,
+  baseSize,
   activeKind,
-}: {
-  blockDim: { x: number; y: number; z: number };
-  blockIdx: { x: number; y: number; z: number };
-  activeKind: 'load' | 'store';
-}) {
-  const gridSize = 8;
-  const cubeSize = 0.5;
+}: Props) {
+  console.log(blockDim)
+  console.log(blockIdx)
+  const baseAccessMap = useMemo(
+    () => evaluateAccessOffsets(accesses, blockDim, blockIdx, params),
+    [accesses, blockDim, blockIdx, params]
+  );
 
-  const cubes = [];
-  const offset = (gridSize - 1) / 2; // 為使整體中心對齊
-
-  for (let z = 0; z < gridSize; z++) {
-    for (let y = 0; y < gridSize; y++) {
-      for (let x = 0; x < gridSize; x++) {
-        const isInBlock =
-          x >= blockIdx.x && x < blockIdx.x + blockDim.x &&
-          y >= blockIdx.y && y < blockIdx.y + blockDim.y &&
-          z >= blockIdx.z && z < blockIdx.z + blockDim.z;
-
-        cubes.push(
-          <Cube
-            key={`${x}-${y}-${z}`}
-            x={(x - offset) * cubeSize * 1.1}
-            y={(y - offset) * cubeSize * 1.1}
-            z={(z - offset) * cubeSize * 1.1}
-            highlight={isInBlock}
-            color={activeKind === 'load' ? '#4da8ff' : '#ff8b4d'}
-            size={cubeSize}
-          />
-        );
+  // 所有 offset 被訪問的 base → offset set
+  const allOffsets = useMemo(() => {
+    const result = new Set<number>();
+    for (const acc of accesses) {
+      if (!activeKind || acc.kind === activeKind) {
+        const base = acc.base;
+        const set = baseAccessMap[base];
+        if (set) {
+          set.forEach((o) => result.add(o));
+        }
       }
     }
+    return result;
+  }, [accesses, baseAccessMap, activeKind]);
+
+  const gridSize = Math.ceil(Math.cbrt(baseSize));
+  const cubeSize = 0.5;
+  const offset = (gridSize - 1) / 2;
+
+  const cubes = [];
+  console.log(baseSize)
+  console.log(gridSize)
+  for (let idx = 0; idx < baseSize; idx++) {
+    const x = idx % gridSize;
+    const y = Math.floor(idx / gridSize) % gridSize;
+    const z = Math.floor(idx / (gridSize * gridSize));
+    const isBlock = allOffsets.has(idx);
+
+    cubes.push(
+      <Cube
+        key={`${x}-${y}-${z}`}
+        x={(x - offset) * cubeSize * 1.1}
+        y={(y - offset) * cubeSize * 1.1}
+        z={(z - offset) * cubeSize * 1.1}
+        highlight={isBlock}
+        color={activeKind === 'store' ? '#ff8b4d' : '#4da8ff'}
+        size={cubeSize}
+      />
+    );
   }
 
-  return (
-    <group position={[0, 0, 0]}>
-      {cubes}
-    </group>
-  );
+  return <group position={[0, 0, 0]}>{cubes}</group>;
 }

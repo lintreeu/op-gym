@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node
 node_modules
 dist
 dist-ssr
@@ -22,4 +23,26 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-env
+
+# Python cache and temp files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.egg
+*.egg-info/
+*.env
+*.venv
+env/
+venv/
+.build/
+.cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+*.mo
+*.pot
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints
