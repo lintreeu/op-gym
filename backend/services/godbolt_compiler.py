@@ -1,7 +1,18 @@
-import httpx, json
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+封裝呼叫 https://godbolt.org 的 nvcc126u2 編譯服務
+--------------------------------------------------
+回傳 dict(ret, ptx, stdout, stderr)
+"""
+from __future__ import annotations
+
+import json
 from typing import Any, Dict, Optional
 
-from .exceptions import (
+import httpx
+
+from backend.exceptions import (
     GodboltAPIError,
     PtxExtractionError,
     RunError,
@@ -49,7 +60,8 @@ async def compile_cuda(
         "compiler": "nvcc126u2",
         "options": {
             "userArguments": user_arguments or "-Xptxas -v",
-            "filters": filters or {
+            "filters": filters
+            or {
                 "binary": False,
                 "binaryObject": False,
                 "execute": True,
@@ -71,21 +83,21 @@ async def compile_cuda(
             if resp.status_code >= 400:
                 raise GodboltAPIError(f"HTTP {resp.status_code} from Godbolt")
             data = resp.json()
-    except httpx.RequestError as e:
+    except httpx.RequestError as e:  # pragma: no cover
         raise GodboltAPIError(f"Network error: {e}") from e
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError as e:  # pragma: no cover
         raise GodboltAPIError(f"Invalid JSON: {e}") from e
 
     # 擷取 stdout / stderr
     exec_result = data.get("execResult", {})
     stdout_txt = "\n".join(msg["text"] for msg in exec_result.get("stdout", []))
-    stderr_txt = "\n".join(msg["text"] for msg in exec_result.get("buildResult", {}).get("stderr", []))
+    stderr_txt = "\n".join(
+        msg["text"] for msg in exec_result.get("buildResult", {}).get("stderr", [])
+    )
 
     # 編譯錯誤檢查（中斷流程）
     errors = [
-        msg["text"]
-        for msg in data.get("stderr", [])
-        if msg.get("severity") == "error"
+        msg["text"] for msg in data.get("stderr", []) if msg.get("severity") == "error"
     ]
     if errors:
         raise RunError("\n".join(errors))
@@ -93,7 +105,6 @@ async def compile_cuda(
     try:
         ptx = _extract_ptx(data)
         ret = ptx != "<Compilation failed>"
-        
     except PtxExtractionError:
         ptx = ""
         ret = False
