@@ -3,9 +3,8 @@
 ────────────────────────────────────────────── */
 import { useState } from 'react';
 import KernelTabs, { type KernelFile } from './components/KernelTabs';
-// import TritonKernelVisualizer from './components/TritonKernelVisualizer';
-import MemoryFlowSankey from './components/MemoryFlowSankey';
 import RightBottomWidgets from './components/RightBottomWidgets';
+import CudaBlockVisualizer from './components/CudaBlockVisualizer'
 
 /* 預設檔案 ----------------------------- */
 const defaultCode = `// flash_attention.cu
@@ -241,7 +240,7 @@ export default function App() {
       >
         {/* Visualizer */}
         <div style={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
-          <MemoryFlowSankey />
+          <CudaBlockVisualizer/>
         </div>
 
         {/* Widgets */}
