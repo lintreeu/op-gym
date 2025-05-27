@@ -1,16 +1,12 @@
 import { useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-
 import EditorPanel from './components/EditorPanel';
 import CudaBlockCanvasGrid from './components/CudaBlockCanvasGrid';
 import MemControlPanel from './components/MemControlPanel';
 import { type Access } from './utils/evaluateAccessOffsets';
 
-const defaultCode = `// flash_attention.cu
-// CUDA 程式碼預設內容...
-`;
-const dummyAccesses = [
+const defaultCode = `// flash_attention.cu\n// CUDA 程式碼預設內容...`;
+
+const dummyAccesses: Access[] = [
   {
     kind: "load",
     base: "arg0",
@@ -41,7 +37,7 @@ const dummyParams = {
   arg0: 0,
   arg1: 0,
   arg3: 0,
-  arg5: 32 // 例如：stride or size
+  arg5: 32
 };
 
 export default function App() {
@@ -53,7 +49,8 @@ export default function App() {
   const [accesses, setAccesses] = useState<Access[]>(dummyAccesses);
   const [elementSizeTable, setElementSizeTable] = useState<Record<string, number>>({});
   const [params, setParams] = useState<Record<string, number>>(dummyParams);
-  const [baseSize, setBaseSize] = useState(512); // 記憶體總範圍（cube 長度）
+  const [baseSize, setBaseSize] = useState(512);
+  const [activeBases, setActiveBases] = useState<string[]>(['arg0']);
 
   const handleRun = async (code: string) => {
     const res = await fetch('http://localhost:8000/run', {
@@ -67,13 +64,11 @@ export default function App() {
     });
 
     const data = await res.json();
-    console.log("Accesses:", data.parsed.accesses);
     setPtx(data.ptx);
-    setLog(data.ptx); // 顯示原始 PTX
+    setLog(data.ptx);
     setAccesses(data.parsed.accesses);
     setElementSizeTable(data.parsed.element_size_table);
 
-    // 初始化參數（如 arg0、arg5）為 32 預設值
     const usedParams = new Set(data.parsed.accesses.flatMap((a: any) => a.param));
     const paramDefaults: Record<string, number> = {};
     usedParams.forEach((p) => (paramDefaults[p] = 32));
@@ -81,89 +76,70 @@ export default function App() {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        height: '100vh',
-        width: '100vw',
-        overflow: 'hidden',
-        fontFamily: 'Segoe UI, sans-serif',
-        backgroundColor: '#f7f7f7',
-      }}
-    >
-      {/* 左側：CUDA 編輯器 */}
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: '#f7f7f7' }}>
+      {/* 左：編輯器 */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <EditorPanel defaultCode={defaultCode} onRun={handleRun} />
       </div>
 
-      {/* 右側：Canvas + 控制面板 + Log */}
-      <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', background: '#f5f5f5' }}>
-        {/* ---------- 上：顯示區 ---------- */}
-        <div style={{ flex: 3, position: 'relative', overflow: 'hidden' }}>
-          {/* ★ 這一層 absolute 讓內容永遠填滿，又不撐開父層 */}
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <CudaBlockCanvasGrid
-              accesses={accesses}
-              blockDim={blockDim}
-              blockIdx={blockIdx}
-              params={params}
-              baseSize={baseSize}
-              activeKind="load"
-            />
-          </div>
+      {/* 右：可視化與控制 */}
+      <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column' }}>
+        {/* 上：Canvas + 控制面板（並排） */}
+        <div style={{ flex: 3, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+          <div style={{ flexBasis: '90%', maxWidth: '90%', overflow: 'hidden' }}>
+    <CudaBlockCanvasGrid
+      accesses={accesses.filter(a => activeBases.includes(a.base))}
+      blockDim={blockDim}
+      blockIdx={blockIdx}
+      params={params}
+      baseSize={baseSize}
+      activeKind="load"
+    />
+  </div>
 
-          {/* 控制面板浮動 */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 10,
-              right: 10,
-              background: '#fff',
-              padding: '1rem',
-              borderRadius: 10,
-              boxShadow: '0 2px 10px rgba(0,0,0,.1)',
-              border: '1px solid #ddd',
-              zIndex: 10,
-            }}
-          >
-            <MemControlPanel
-              blockDim={blockDim}
-              setBlockDim={setBlockDim}
-              blockIdx={blockIdx}
-              setBlockIdx={setBlockIdx}
-              base={basePos}
-              setBase={setBasePos}
-              params={params}
-              setParams={setParams}
-            />
-          </div>
+  {/* 右側：MemControlPanel（占10%~20%） */}
+  <div style={{
+  flexBasis: '18.18%',
+  maxWidth: '18.18%',
+  minWidth: '240px',
+  height: '100%',
+  boxSizing: 'border-box',
+  overflowY: 'auto',
+  background: '#fff',
+  margin: '2px 2px 2px 0', // 保留右邊 & 上下邊界
+  borderRadius: '12px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+}}>
+    <MemControlPanel
+      blockDim={blockDim}
+      setBlockDim={setBlockDim}
+      blockIdx={blockIdx}
+      setBlockIdx={setBlockIdx}
+      base={basePos}
+      setBase={setBasePos}
+      params={params}
+      setParams={setParams}
+      activeBases={activeBases}
+      setActiveBases={setActiveBases}
+    />
+  </div>
         </div>
 
-        {/* 下：記憶體訪問 log 顯示 */}
-        <div
-          style={{
-            flex: 2,
-            padding: '1rem',
-            overflowY: 'auto',
-            borderTop: '1px solid #ccc',
-            background: '#fafafa',
-          }}
-        >
+        {/* 下：PTX log */}
+        <div style={{ flex: 2, padding: '1rem', background: '#fafafa', borderTop: '1px solid #ccc', overflowY: 'auto' }}>
           <h4 style={{ color: '#333', margin: 0 }}>Memory Access Info</h4>
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              color: '#444',
-              background: '#fff',
-              border: '1px solid #ccc',
-              padding: '0.5rem',
-              borderRadius: '6px',
-              height: '100%',
-              overflowY: 'auto',
-              marginTop: '0.75rem',
-              fontSize: '14px',
-            }}
-          >
+          <pre style={{
+            whiteSpace: 'pre-wrap',
+            color: '#444',
+            background: '#fff',
+            border: '1px solid #ccc',
+            padding: '0.5rem',
+            borderRadius: '6px',
+            height: '100%',
+            overflowY: 'auto',
+            marginTop: '0.75rem',
+            fontSize: '14px',
+          }}>
             {log || '(Reserved for memory access info, logs, etc.)'}
           </pre>
         </div>

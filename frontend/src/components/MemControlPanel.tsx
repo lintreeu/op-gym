@@ -68,13 +68,17 @@ interface Props {
   setBase: (v: { x: number; y: number; z: number }) => void;
   params?: Record<string, number>;
   setParams?: (p: Record<string, number>) => void;
+  activeBases: string[];
+  setActiveBases: (v: string[]) => void;
 }
 
 export default function MemControlPanel({
   blockDim, blockIdx, base,
   setBlockDim, setBlockIdx, setBase,
   params = {},
-  setParams = () => {}
+  setParams = () => {},
+  activeBases,
+  setActiveBases
 }: Props) {
   const maxLinearIdx = blockDim.x * blockDim.y * blockDim.z - 1;
   const currentLinear =
@@ -89,29 +93,34 @@ export default function MemControlPanel({
     setBlockIdx({ x, y, z });
   };
 
+  // icon mapping
+  const baseIcons: Record<string, string> = {
+    arg0: '/images/arg0.png',
+    arg1: '/images/arg1.png',
+    arg3: '/images/arg3.png',
+  };
+
   return (
     <div
       style={{
-        width: '200px',
         padding: '1.5rem',
         background: '#f8f9fa',
-        borderRight: '1px solid #e0e0e0',
-        boxShadow: '2px 0 5px rgba(0,0,0,0.05)',
+        boxSizing: 'border-box',
         overflowY: 'auto',
         height: '100%',
-        fontFamily: 'Arial, sans-serif'
+        fontFamily: 'Arial, sans-serif',
+        width: '100%',
+        maxWidth: '320px'
       }}
     >
       <h4 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '1rem', color: '#5f6368' }}>
         Control
       </h4>
 
-      {/* BlockDim */}
       <RangeSlider label="blockDim.x" value={blockDim.x} onChange={v => setBlockDim({ ...blockDim, x: v })} />
       <RangeSlider label="blockDim.y" value={blockDim.y} onChange={v => setBlockDim({ ...blockDim, y: v })} />
       <RangeSlider label="blockDim.z" value={blockDim.z} onChange={v => setBlockDim({ ...blockDim, z: v })} />
 
-      {/* blockIdx slider */}
       <div style={{ marginBottom: '1.5rem' }}>
         <label
           style={{
@@ -151,19 +160,49 @@ export default function MemControlPanel({
         </div>
       </div>
 
-      {/* Param 控制區塊 */}
       <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '0.5rem', color: '#5f6368' }}>
-        Parameters
+        Access Bases (Max 3)
       </h4>
-      {Object.entries(params).map(([key, value]) => (
-        <div key={key} style={{ marginBottom: '0.75rem', fontSize: '13px' }}>
-          <label>{key}:</label>
-          <InputBox
-            value={value}
-            onChange={(v) => setParams({ ...params, [key]: v })}
-          />
-        </div>
-      ))}
+      <p style={{ fontSize: '13px', marginBottom: '0.75rem' }}>
+        Select up to 3 memory bases to visualize:
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        {Object.entries(baseIcons).map(([base, icon]) => {
+          const selected = activeBases.includes(base);
+          return (
+            <button
+              key={base}
+              onClick={() => {
+                if (selected) {
+                  setActiveBases(activeBases.filter(b => b !== base));
+                } else if (activeBases.length < 3) {
+                  setActiveBases([...activeBases, base]);
+                }
+              }}
+              style={{
+                border: selected ? '2px solid black' : '2px solid transparent',
+                borderRadius: '6px',
+                padding: 0,
+                cursor: 'pointer',
+                background: 'none'
+              }}
+            >
+              <img
+                src={icon}
+                alt={base}
+                title={base}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '4px',
+                  opacity: selected ? 1 : 0.4,
+                  transition: 'opacity 0.2s ease'
+                }}
+              />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
