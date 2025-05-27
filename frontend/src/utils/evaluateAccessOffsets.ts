@@ -9,6 +9,25 @@ export type Access = {
 
 export type Dim3 = { x: number; y: number; z: number };
 
+/**
+ * 將 CUDA 風格的 threadIdx.x / blockDim.x 等替換成合法 JS 名稱
+ */
+function sanitizeExpr(expr: string): string {
+  return expr
+    .replace(/\bthreadIdx\.x\b/g, 'threadIdx_x')
+    .replace(/\bthreadIdx\.y\b/g, 'threadIdx_y')
+    .replace(/\bthreadIdx\.z\b/g, 'threadIdx_z')
+    .replace(/\bblockIdx\.x\b/g, 'blockIdx_x')
+    .replace(/\bblockIdx\.y\b/g, 'blockIdx_y')
+    .replace(/\bblockIdx\.z\b/g, 'blockIdx_z')
+    .replace(/\bblockDim\.x\b/g, 'blockDim_x')
+    .replace(/\bblockDim\.y\b/g, 'blockDim_y')
+    .replace(/\bblockDim\.z\b/g, 'blockDim_z');
+}
+
+/**
+ * Evaluate memory access expressions across all threadIdx.x for a given blockIdx.
+ */
 export function evaluateAccessOffsets(
   accesses: Access[],
   blockDim: Dim3,
@@ -24,21 +43,23 @@ export function evaluateAccessOffsets(
     for (let tx = 0; tx < blockDim.x; tx++) {
       const ctx = {
         ...params,
-        "threadIdx.x": tx,
-        "blockIdx.x": blockIdx.x,
-        "blockDim.x": blockDim.x,
-        "threadIdx.y": 0,
-        "blockIdx.y": 0,
-        "blockDim.y": 1,
-        "threadIdx.z": 0,
-        "blockIdx.z": 0,
-        "blockDim.z": 1,
+        threadIdx_x: tx,
+        threadIdx_y: 0,
+        threadIdx_z: 0,
+        blockIdx_x: blockIdx.x,
+        blockIdx_y: blockIdx.y ?? 0,
+        blockIdx_z: blockIdx.z ?? 0,
+        blockDim_x: blockDim.x,
+        blockDim_y: blockDim.y ?? 1,
+        blockDim_z: blockDim.z ?? 1,
       };
 
+      const expr = sanitizeExpr(acc.offset);
+
       try {
-        const fn = new Function(...Object.keys(ctx), `return ${acc.offset};`);
+        const fn = new Function(...Object.keys(ctx), `return ${expr};`);
         const offset = fn(...Object.values(ctx));
-        result[base].add(Math.floor(offset)); // offset treated as unit=1
+        result[base].add(Math.floor(offset)); // treat offset as unit=1
       } catch (e) {
         console.warn("eval error:", acc.offset, e);
       }

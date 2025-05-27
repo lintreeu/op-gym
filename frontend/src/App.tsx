@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 
 import EditorPanel from './components/EditorPanel';
-import CudaBlock3DViewer from './components/CudaBlock3DViewer';
+import CudaBlockCanvasGrid from './components/CudaBlockCanvasGrid';
 import MemControlPanel from './components/MemControlPanel';
 import { type Access } from './utils/evaluateAccessOffsets';
 
@@ -50,8 +50,8 @@ export default function App() {
   const [basePos, setBasePos] = useState({ x: 0, y: 0, z: 0 });
   const [log, setLog] = useState('');
   const [ptx, setPtx] = useState('');
-  const [accesses, setAccesses] = useState<Access[]>([]);
-  const [elementSizeTable, setElementSizeTable] = useState<Record<string, number>>(dummyAccesses);
+  const [accesses, setAccesses] = useState<Access[]>(dummyAccesses);
+  const [elementSizeTable, setElementSizeTable] = useState<Record<string, number>>({});
   const [params, setParams] = useState<Record<string, number>>(dummyParams);
   const [baseSize, setBaseSize] = useState(512); // 記憶體總範圍（cube 長度）
 
@@ -98,36 +98,30 @@ export default function App() {
 
       {/* 右側：Canvas + 控制面板 + Log */}
       <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', background: '#f5f5f5' }}>
-        {/* 上：3D Canvas */}
-        <div style={{ flex: 3, position: 'relative' }}>
-          <Canvas
-            camera={{ position: [6, 6, 6] }}
-            style={{ background: '#f5f5f5' }}
-            gl={{ preserveDrawingBuffer: true }}
-          >
-            <ambientLight />
-            <pointLight position={[10, 10, 10]} />
-            <CudaBlock3DViewer
+        {/* ---------- 上：顯示區 ---------- */}
+        <div style={{ flex: 3, position: 'relative', overflow: 'hidden' }}>
+          {/* ★ 這一層 absolute 讓內容永遠填滿，又不撐開父層 */}
+          <div style={{ position: 'absolute', inset: 0 }}>
+            <CudaBlockCanvasGrid
               accesses={accesses}
               blockDim={blockDim}
               blockIdx={blockIdx}
               params={params}
               baseSize={baseSize}
-              activeKind="load" // or "store"
+              activeKind="load"
             />
-            <OrbitControls />
-          </Canvas>
+          </div>
 
           {/* 控制面板浮動 */}
           <div
             style={{
               position: 'absolute',
-              top: '10px',
-              right: '10px',
-              background: 'white',
+              top: 10,
+              right: 10,
+              background: '#fff',
               padding: '1rem',
-              borderRadius: '10px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+              borderRadius: 10,
+              boxShadow: '0 2px 10px rgba(0,0,0,.1)',
               border: '1px solid #ddd',
               zIndex: 10,
             }}

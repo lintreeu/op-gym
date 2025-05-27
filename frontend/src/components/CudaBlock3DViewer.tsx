@@ -1,34 +1,39 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { evaluateAccessOffsets, type Access, type Dim3 } from '../utils/evaluateAccessOffsets';
+import { Text } from '@react-three/drei';
+import {
+  evaluateAccessOffsets,
+  type Access,
+  type Dim3,
+} from '../utils/evaluateAccessOffsets';
 
+/* ---------- 共用幾何：整個 app 只做一次 ---------- */
+const CUBE_SIZE = 0.5;
+const BOX_GEOM = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
+const EDGE_GEOM = new THREE.EdgesGeometry(BOX_GEOM);
+
+/* ---------- Cube ---------- */
 function Cube({
-  x, y, z,
-  highlight = false,
-  color = '#4da8ff',
-  size = 0.5,
+  position,
+  highlight,
+  color,
 }: {
-  x: number;
-  y: number;
-  z: number;
-  highlight?: boolean;
-  color?: string;
-  size?: number;
+  position: THREE.Vector3Tuple;
+  highlight: boolean;
+  color: string;
 }) {
-  const edgeGeom = new THREE.EdgesGeometry(new THREE.BoxGeometry(size, size, size));
-
   return (
-    <group position={[x, y, z]}>
-      <mesh>
-        <boxGeometry args={[size, size, size]} />
+    <group position={position}>
+      <mesh geometry={BOX_GEOM}>
         <meshStandardMaterial
           color={highlight ? color : '#999'}
-          opacity={highlight ? 1.0 : 0.12}
+          opacity={highlight ? 1 : 0.12}
           transparent
         />
       </mesh>
+
       {highlight && (
-        <lineSegments geometry={edgeGeom}>
+        <lineSegments geometry={EDGE_GEOM}>
           <lineBasicMaterial attach="material" color="#000" />
         </lineSegments>
       )}
@@ -36,15 +41,15 @@ function Cube({
   );
 }
 
+/* ---------- 主要元件 ---------- */
 interface Props {
-  accesses: Access[];
+  accesses: Access[]; // 已經按 base 過濾好
   blockDim: Dim3;
   blockIdx: Dim3;
   params: Record<string, number>;
   baseSize: number;
-  activeKind?: 'load' | 'store'; // optional filter
+  activeKind?: 'load' | 'store';
 }
-
 export default function CudaBlock3DViewer({
   accesses,
   blockDim,
@@ -53,53 +58,81 @@ export default function CudaBlock3DViewer({
   baseSize,
   activeKind,
 }: Props) {
-  console.log(blockDim)
-  console.log(blockIdx)
+  /* ==== 算出哪些 offset 會被打亮 ==== */
   const baseAccessMap = useMemo(
     () => evaluateAccessOffsets(accesses, blockDim, blockIdx, params),
-    [accesses, blockDim, blockIdx, params]
+    [accesses, blockDim, blockIdx, params],
   );
-
-  // 所有 offset 被訪問的 base → offset set
-  const allOffsets = useMemo(() => {
+  const activeOffsets = useMemo(() => {
+    const set = baseAccessMap[accesses[0].base] ?? new Set<number>();
     const result = new Set<number>();
-    for (const acc of accesses) {
-      if (!activeKind || acc.kind === activeKind) {
-        const base = acc.base;
-        const set = baseAccessMap[base];
-        if (set) {
-          set.forEach((o) => result.add(o));
-        }
-      }
-    }
+    accesses.forEach((acc) => {
+      if (!activeKind || acc.kind === activeKind) set.forEach((o) => result.add(o));
+    });
     return result;
   }, [accesses, baseAccessMap, activeKind]);
 
+  /* ==== cube 座標 ===== */
   const gridSize = Math.ceil(Math.cbrt(baseSize));
-  const cubeSize = 0.5;
   const offset = (gridSize - 1) / 2;
+  const spacing = CUBE_SIZE * 1.1;
 
   const cubes = [];
-  console.log(baseSize)
-  console.log(gridSize)
   for (let idx = 0; idx < baseSize; idx++) {
     const x = idx % gridSize;
     const y = Math.floor(idx / gridSize) % gridSize;
     const z = Math.floor(idx / (gridSize * gridSize));
-    const isBlock = allOffsets.has(idx);
+    const highlight = activeOffsets.has(idx);
 
     cubes.push(
       <Cube
-        key={`${x}-${y}-${z}`}
-        x={(x - offset) * cubeSize * 1.1}
-        y={(y - offset) * cubeSize * 1.1}
-        z={(z - offset) * cubeSize * 1.1}
-        highlight={isBlock}
+        key={idx}
+        position={[
+          (x - offset) * spacing,
+          (y - offset) * spacing,
+          (z - offset) * spacing,
+        ]}
+        highlight={highlight}
         color={activeKind === 'store' ? '#ff8b4d' : '#4da8ff'}
-        size={cubeSize}
-      />
+      />,
     );
   }
 
-  return <group position={[0, 0, 0]}>{cubes}</group>;
+  /* ==== 軸 ArrowHelper → 也只做一次 ==== */
+  const axes = useMemo(() => {
+    const mk = (dir: THREE.Vector3, color: number) =>
+      new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), gridSize * spacing * 0.7, color);
+    return {
+      x: mk(new THREE.Vector3(1, 0, 0), 0xff0000),
+      y: mk(new THREE.Vector3(0, 1, 0), 0x00ff00),
+      z: mk(new THREE.Vector3(0, 0, 1), 0x0000ff),
+    };
+  }, [gridSize, spacing]);
+
+  return (
+    <group>
+      {/* Base 名稱 */}
+      <Text position={[0, gridSize * spacing * 0.55, 0]} fontSize={0.4} color="#111">
+        {accesses[0].base}
+      </Text>
+
+      {/* 所有 cubes */}
+      {cubes}
+
+      {/* 三軸 */}
+      <primitive object={axes.x} />
+      <primitive object={axes.y} />
+      <primitive object={axes.z} />
+
+      <Text position={[gridSize * spacing * 0.78, 0, 0]} fontSize={0.25} color="#ff0000">
+        +x
+      </Text>
+      <Text position={[0, gridSize * spacing * 0.78, 0]} fontSize={0.25} color="#00ff00">
+        +y
+      </Text>
+      <Text position={[0, 0, gridSize * spacing * 0.78]} fontSize={0.25} color="#0000ff">
+        +z
+      </Text>
+    </group>
+  );
 }
