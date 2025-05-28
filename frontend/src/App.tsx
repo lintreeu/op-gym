@@ -30,27 +30,46 @@ const dummyAccesses: Access[] = [
     param: ["arg3", "arg5"],
     eltype: "u32",
     raw: "st.global.u32 [%rd3], %r4;"
+  },
+  {
+    kind: "store",
+    base: "arg4",
+    offset: "((threadIdx.x + blockDim.x + blockIdx.x * arg5))",
+    param: ["arg3", "arg5"],
+    eltype: "u32",
+    raw: "st.global.u32 [%rd3], %r4;"
   }
 ];
 
 const dummyParams = {
-  arg0: 0,
-  arg1: 0,
-  arg3: 0,
-  arg5: 32
+  arg0: 10,
+  arg1: 10,
+  arg3: 10,
+  arg5: 10
 };
 
+
+
 export default function App() {
-  const [blockDim, setBlockDim] = useState({ x: 4, y: 4, z: 2 });
+  const [blockDim, setBlockDim] = useState({ x: 5, y: 0 ,z: 0 });
   const [blockIdx, setBlockIdx] = useState({ x: 0, y: 0, z: 0 });
   const [basePos, setBasePos] = useState({ x: 0, y: 0, z: 0 });
   const [log, setLog] = useState('');
   const [ptx, setPtx] = useState('');
   const [accesses, setAccesses] = useState<Access[]>(dummyAccesses);
-  const [elementSizeTable, setElementSizeTable] = useState<Record<string, number>>({});
   const [params, setParams] = useState<Record<string, number>>(dummyParams);
-  const [baseSize, setBaseSize] = useState(512);
+  const [elementSizeTable, setElementSizeTable] = useState<Record<string, number>>({});
   const [activeBases, setActiveBases] = useState<string[]>(['arg0']);
+  const [colors, setColors] = useState<Record<string, string>>({
+    arg0: '#4da8ff',
+    arg1: '#aaaaaa',
+    arg3: '#ff8b4d'
+  });
+
+  const [layoutMap, setLayoutMap] = useState<Record<string, {
+    layout: '1d' | 'row-major' | 'col-major' | '3d';
+    dims: { rows?: number; cols?: number; depth?: number };
+  }>>({});
 
   const handleRun = async (code: string) => {
     const res = await fetch('http://localhost:8000/run', {
@@ -92,12 +111,34 @@ export default function App() {
               blockDim={blockDim}
               blockIdx={blockIdx}
               params={params}
-              baseSize={baseSize}
               activeKind="load"
+              layoutMap={layoutMap}
+              colors = {colors}
+              onLayoutChange={(base, layout) => {
+                setLayoutMap(prev => {
+                  const prevDims = prev[base]?.dims ?? {};      // 保留舊的 rows/cols/depth
+                  return { ...prev, [base]: { layout, dims: prevDims } };
+                });
+              }}
+              onDimsChange={(base, dims) => {
+                setLayoutMap(prev => ({
+                  ...prev,
+                  [base]: {
+                    ...prev[base],
+                    dims: { ...prev[base]?.dims, ...dims },
+                  },
+                }));
+              }}
+              onParamsChange={(param, value) => {
+                setParams(prev => ({
+                  ...prev,
+                  [param]: value
+                }));
+              }}
             />
           </div>
 
-          {/* 右側：MemControlPanel（占10%~20%） */}
+          {/* 控制面板右側 */}
           <div style={{
             flexBasis: '18.18%',
             maxWidth: '18.18%',
@@ -106,7 +147,7 @@ export default function App() {
             boxSizing: 'border-box',
             overflowY: 'auto',
             background: '#fff',
-            margin: '2px 2px 2px 0', // 保留右邊 & 上下邊界
+            margin: '2px 2px 2px 0',
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
           }}>
@@ -121,11 +162,13 @@ export default function App() {
               setParams={setParams}
               activeBases={activeBases}
               setActiveBases={setActiveBases}
+              colors={colors}
+              setColors={setColors}
             />
           </div>
         </div>
 
-        {/* 下：PTX log */}
+        {/* 下方：PTX log */}
         <div style={{ flex: 2, padding: '1rem', background: '#fafafa', borderTop: '1px solid #ccc', overflowY: 'auto' }}>
           <h4 style={{ color: '#333', margin: 0 }}>Memory Access Info</h4>
           <pre style={{

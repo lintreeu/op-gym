@@ -59,6 +59,7 @@ export function evaluateAccessOffsets(
       try {
         const fn = new Function(...Object.keys(ctx), `return ${expr};`);
         const offset = fn(...Object.values(ctx));
+        console.log(offset)
         result[base].add(Math.floor(offset)); // treat offset as unit=1
       } catch (e) {
         console.warn("eval error:", acc.offset, e);
