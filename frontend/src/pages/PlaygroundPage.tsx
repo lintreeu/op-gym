@@ -1,11 +1,9 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import EditorPanel from '../components/EditorPanel';
 import CudaBlockCanvasGrid from '../components/CudaBlockCanvasGrid';
 import MemControlPanel from '../components/MemControlPanel';
 import { type Access } from '../utils/evaluateAccessOffsets';
 
-const defaultCode = `// flash_attention.cu\n// CUDA 程式碼預設內容...`;
 
 const dummyAccesses: Access[] = [
   {
@@ -49,10 +47,8 @@ const dummyParams = {
   arg5: 10
 };
 
-
-
 export default function PlaygroundPage() {
-  const [blockDim, setBlockDim] = useState({ x: 5, y: 0 ,z: 0 });
+  const [blockDim, setBlockDim] = useState({ x: 5, y: 0, z: 0 });
   const [blockIdx, setBlockIdx] = useState({ x: 0, y: 0, z: 0 });
   const [basePos, setBasePos] = useState({ x: 0, y: 0, z: 0 });
   const [log, setLog] = useState('');
@@ -96,98 +92,129 @@ export default function PlaygroundPage() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: '#f7f7f7' }}>
-      {/* 左：編輯器 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <EditorPanel defaultCode={defaultCode} onRun={handleRun} />
-      </div>
-
-      {/* 右：可視化與控制 */}
-      <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column' }}>
-        {/* 上：Canvas + 控制面板（並排） */}
-        <div style={{ flex: 3, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-          <div style={{ flexBasis: '90%', maxWidth: '90%', overflow: 'hidden' }}>
-            <CudaBlockCanvasGrid
-              accesses={accesses.filter(a => activeBases.includes(a.base))}
-              blockDim={blockDim}
-              blockIdx={blockIdx}
-              params={params}
-              activeKind="load"
-              layoutMap={layoutMap}
-              colors = {colors}
-              onLayoutChange={(base, layout) => {
-                setLayoutMap(prev => {
-                  const prevDims = prev[base]?.dims ?? {};      // 保留舊的 rows/cols/depth
-                  return { ...prev, [base]: { layout, dims: prevDims } };
-                });
-              }}
-              onDimsChange={(base, dims) => {
-                setLayoutMap(prev => ({
-                  ...prev,
-                  [base]: {
-                    ...prev[base],
-                    dims: { ...prev[base]?.dims, ...dims },
-                  },
-                }));
-              }}
-              onParamsChange={(param, value) => {
-                setParams(prev => ({
-                  ...prev,
-                  [param]: value
-                }));
-              }}
-            />
-          </div>
-
-          {/* 控制面板右側 */}
-          <div style={{
-            flexBasis: '18.18%',
-            maxWidth: '18.18%',
-            minWidth: '240px',
-            height: '100%',
-            boxSizing: 'border-box',
-            overflowY: 'auto',
-            background: '#fff',
-            margin: '2px 2px 2px 0',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-          }}>
-            <MemControlPanel
-              blockDim={blockDim}
-              setBlockDim={setBlockDim}
-              blockIdx={blockIdx}
-              setBlockIdx={setBlockIdx}
-              base={basePos}
-              setBase={setBasePos}
-              params={params}
-              setParams={setParams}
-              activeBases={activeBases}
-              setActiveBases={setActiveBases}
-              colors={colors}
-              setColors={setColors}
-            />
-          </div>
+    <>
+      {/* Top Navigation Bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.75rem 1.5rem',
+        backgroundColor: '#f8f9fc',
+        borderBottom: '1px solid #e0e0e0',
+        fontFamily: 'sans-serif'
+      }}>
+        <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#202124' }}>
+          <span style={{ color: '#4285F4' }}>Op</span> Gym
         </div>
-
-        {/* 下方：PTX log */}
-        <div style={{ flex: 2, padding: '1rem', background: '#fafafa', borderTop: '1px solid #ccc', overflowY: 'auto' }}>
-          <h4 style={{ color: '#333', margin: 0 }}>Memory Access Info</h4>
-          <pre style={{
-            whiteSpace: 'pre-wrap',
-            color: '#444',
-            background: '#fff',
-            border: '1px solid #ccc',
-            padding: '0.5rem',
-            borderRadius: '6px',
-            height: '100%',
-            overflowY: 'auto',
-            marginTop: '0.75rem',
-            fontSize: '14px',
-          }}>
-            {log || '(Reserved for memory access info, logs, etc.)'}
-          </pre>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.95rem', color: '#5f6368' }}>
+          <button style={{
+            padding: '0.35rem 0.9rem',
+            borderRadius: '999px',
+            backgroundColor: '#e8f0fe',
+            border: '1px solid #c6dafc',
+            color: '#1a73e8',
+            fontWeight: 500,
+            cursor: 'pointer'
+          }}>🔑 Get API key</button>
+          <span style={{ fontWeight: 600, color: '#202124' }}>Studio</span>
+          <a href="#" style={{ textDecoration: 'none', color: '#5f6368' }}>Dashboard</a>
+          <a href="#" style={{ textDecoration: 'none', color: '#5f6368' }}>Documentation ↗</a>
+          <span style={{ cursor: 'pointer' }}>⚙️</span>
         </div>
       </div>
-    </div>
+
+      {/* Main Layout */}
+      <div style={{ display: 'flex', height: 'calc(100vh - 60px)', width: '100vw', overflow: 'hidden', backgroundColor: '#f7f7f7' }}>
+        {/* Left: Editor */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <EditorPanel onRun={handleRun} />
+        </div>
+
+        {/* Right: Visualizer and Panel */}
+        <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 3, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+            <div style={{ flexBasis: '90%', maxWidth: '90%', overflow: 'hidden' }}>
+              <CudaBlockCanvasGrid
+                accesses={accesses.filter(a => activeBases.includes(a.base))}
+                blockDim={blockDim}
+                blockIdx={blockIdx}
+                params={params}
+                activeKind="load"
+                layoutMap={layoutMap}
+                colors={colors}
+                onLayoutChange={(base, layout) => {
+                  setLayoutMap(prev => {
+                    const prevDims = prev[base]?.dims ?? {};
+                    return { ...prev, [base]: { layout, dims: prevDims } };
+                  });
+                }}
+                onDimsChange={(base, dims) => {
+                  setLayoutMap(prev => ({
+                    ...prev,
+                    [base]: {
+                      ...prev[base],
+                      dims: { ...prev[base]?.dims, ...dims },
+                    },
+                  }));
+                }}
+                onParamsChange={(param, value) => {
+                  setParams(prev => ({
+                    ...prev,
+                    [param]: value
+                  }));
+                }}
+              />
+            </div>
+
+            <div style={{
+              flexBasis: '18.18%',
+              maxWidth: '18.18%',
+              minWidth: '240px',
+              height: '100%',
+              boxSizing: 'border-box',
+              overflowY: 'auto',
+              background: '#fff',
+              margin: '2px 2px 2px 0',
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+            }}>
+              <MemControlPanel
+                blockDim={blockDim}
+                setBlockDim={setBlockDim}
+                blockIdx={blockIdx}
+                setBlockIdx={setBlockIdx}
+                base={basePos}
+                setBase={setBasePos}
+                params={params}
+                setParams={setParams}
+                activeBases={activeBases}
+                setActiveBases={setActiveBases}
+                colors={colors}
+                setColors={setColors}
+              />
+            </div>
+          </div>
+
+          {/* PTX Output */}
+          <div style={{ flex: 2, padding: '1rem', background: '#fafafa', borderTop: '1px solid #ccc', overflowY: 'auto' }}>
+            <h4 style={{ color: '#333', margin: 0 }}>PTX Output</h4>
+            <pre style={{
+              whiteSpace: 'pre-wrap',
+              color: '#444',
+              background: '#fff',
+              border: '1px solid #ccc',
+              padding: '0.5rem',
+              borderRadius: '6px',
+              height: '100%',
+              overflowY: 'auto',
+              marginTop: '0.75rem',
+              fontSize: '14px',
+            }}>
+              {log || '(Reserved for memory access info, logs, etc.)'}
+            </pre>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
