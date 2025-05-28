@@ -87,42 +87,42 @@ export default function App() {
         {/* 上：Canvas + 控制面板（並排） */}
         <div style={{ flex: 3, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
           <div style={{ flexBasis: '90%', maxWidth: '90%', overflow: 'hidden' }}>
-    <CudaBlockCanvasGrid
-      accesses={accesses.filter(a => activeBases.includes(a.base))}
-      blockDim={blockDim}
-      blockIdx={blockIdx}
-      params={params}
-      baseSize={baseSize}
-      activeKind="load"
-    />
-  </div>
+            <CudaBlockCanvasGrid
+              accesses={accesses.filter(a => activeBases.includes(a.base))}
+              blockDim={blockDim}
+              blockIdx={blockIdx}
+              params={params}
+              baseSize={baseSize}
+              activeKind="load"
+            />
+          </div>
 
-  {/* 右側：MemControlPanel（占10%~20%） */}
-  <div style={{
-  flexBasis: '18.18%',
-  maxWidth: '18.18%',
-  minWidth: '240px',
-  height: '100%',
-  boxSizing: 'border-box',
-  overflowY: 'auto',
-  background: '#fff',
-  margin: '2px 2px 2px 0', // 保留右邊 & 上下邊界
-  borderRadius: '12px',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-}}>
-    <MemControlPanel
-      blockDim={blockDim}
-      setBlockDim={setBlockDim}
-      blockIdx={blockIdx}
-      setBlockIdx={setBlockIdx}
-      base={basePos}
-      setBase={setBasePos}
-      params={params}
-      setParams={setParams}
-      activeBases={activeBases}
-      setActiveBases={setActiveBases}
-    />
-  </div>
+          {/* 右側：MemControlPanel（占10%~20%） */}
+          <div style={{
+            flexBasis: '18.18%',
+            maxWidth: '18.18%',
+            minWidth: '240px',
+            height: '100%',
+            boxSizing: 'border-box',
+            overflowY: 'auto',
+            background: '#fff',
+            margin: '2px 2px 2px 0', // 保留右邊 & 上下邊界
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          }}>
+            <MemControlPanel
+              blockDim={blockDim}
+              setBlockDim={setBlockDim}
+              blockIdx={blockIdx}
+              setBlockIdx={setBlockIdx}
+              base={basePos}
+              setBase={setBasePos}
+              params={params}
+              setParams={setParams}
+              activeBases={activeBases}
+              setActiveBases={setActiveBases}
+            />
+          </div>
         </div>
 
         {/* 下：PTX log */}
