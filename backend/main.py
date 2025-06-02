@@ -7,9 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.routers import run, ptx_mem
 
 app = FastAPI(
-    title="CUDA-Gym",
-    version="0.4.0",
-    description="Compile / Analyse / Visualise CUDA kernels in the browser",
+    title="Op-Gym",
+    version="0.1.0",
+    description="Compile / Analyse / Visualise Neural Network Operator kernels in the browser",
 )
 
 # -- CORS ------------------------------------------------------------------

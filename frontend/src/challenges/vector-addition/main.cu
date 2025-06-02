@@ -1,10 +1,3 @@
-// main.cu
-#include <cuda_runtime.h>
-#include <iostream>
-#include <vector>
-
-extern __global__ void vector_add(const float*, const float*, float*, int);
-
 int main() {
     const int N = 1 << 20;
     const size_t size = N * sizeof(float);
@@ -32,7 +25,7 @@ int main() {
     // Copy result back
     cudaMemcpy(h_C.data(), d_C, size, cudaMemcpyDeviceToHost);
 
-    // Verify
+    // Verify and print some results
     bool correct = true;
     for (int i = 0; i < N; i++) {
         if (fabs(h_C[i] - 3.0f) > 1e-5) {
@@ -42,6 +35,12 @@ int main() {
     }
 
     std::cout << (correct ? "Vector addition PASSED\n" : "Vector addition FAILED\n");
+
+    // Print first 10 results for verification
+    std::cout << "Sample results:\n";
+    for (int i = 0; i < 10; ++i) {
+        std::cout << "C[" << i << "] = " << h_C[i] << std::endl;
+    }
 
     // Clean up
     cudaFree(d_A);
