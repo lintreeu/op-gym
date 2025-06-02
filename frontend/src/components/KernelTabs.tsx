@@ -29,7 +29,7 @@ export default function KernelTabs({ files, setFiles, activeTab, setActiveTab }:
   };
 
   const getLanguage = (fileName: string): string => {
-    if (fileName.endsWith('.cu')) return 'cuda';
+    if (fileName.endsWith('.cu')) return 'cpp';
     if (fileName.endsWith('.ptx')) return 'asm'; // PTX 可視為組合語言
     if (fileName.endsWith('.cpp') || fileName.endsWith('.cc') || fileName.endsWith('.cxx')) return 'cpp';
     if (fileName.endsWith('.c')) return 'c';

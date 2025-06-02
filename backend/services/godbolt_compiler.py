@@ -52,16 +52,16 @@ async def compile_cuda(
     source_code: str,
     user_arguments: str = "",
     filters: Optional[Dict[str, bool]] = None,
+    compiler: str = "nvcc126u2",
 ) -> Dict[str, Any]:
     """呼叫 Godbolt nvcc，回傳包含 ret, ptx, stdout, stderr 的 dict"""
 
     payload = {
         "source": source_code,
-        "compiler": "nvcc126u2",
+        "compiler": compiler,
         "options": {
             "userArguments": user_arguments or "-Xptxas -v",
-            "filters": filters.model_dump() if filters else {}
-            or {
+            "filters": filters.model_dump() if filters else {
                 "binary": False,
                 "binaryObject": False,
                 "execute": True,
@@ -91,17 +91,41 @@ async def compile_cuda(
 
     # 擷取 stdout / stderr
     exec_result = data.get("execResult", {})
-    stdout_txt = "\n".join(msg["text"] for msg in exec_result.get("stdout", []))
-    stderr_txt = "\n".join(
-        msg["text"] for msg in exec_result.get("buildResult", {}).get("stderr", [])
-    )
 
-    # 編譯錯誤檢查（中斷流程）
-    errors = [
-        msg["text"] for msg in data.get("stderr", []) if msg.get("severity") == "error"
-    ]
-    if errors:
-        raise RunError("\n".join(errors))
+    stdout_txt = ""
+    # 優先從 execResult.stdout 抓取 (list of {text: ...})
+    if "stdout" in exec_result and isinstance(exec_result.get("stdout"), list):
+        stdout_txt = "\n".join(
+            msg.get("text", "") for msg in exec_result["stdout"]
+        )
+    # 若 execResult 不存在 stdout，則嘗試從 data["stdout"]
+    elif isinstance(data.get("stdout"), list):
+        stdout_txt = "\n".join(
+            msg.get("text", "") for msg in data["stdout"]
+        )
+    # fallback：若 data["stdout"] 是純字串（非 list）
+    else:
+        stdout_txt = data.get("stdout", "")
+
+
+    # 預設為空字串
+    stderr_txt = ""
+    # 優先從 execResult.buildResult.stderr 取得
+    if "buildResult" in exec_result and isinstance(exec_result["buildResult"].get("stderr"), list):
+        stderr_txt = "\n".join(
+            msg.get("text", "") for msg in exec_result["buildResult"]["stderr"]
+        )
+    # 若沒有 buildResult 或其 stderr，改從 data["stderr"] 嘗試
+    elif isinstance(data.get("stderr"), list):
+        stderr_txt = "\n".join(
+            msg.get("text", "") for msg in data["stderr"]
+        )
+    # 最後 fallback：若 data["stderr"] 是純字串
+    else:
+        stderr_txt = data.get("stderr", "")
+
+
+    print(stderr_txt)
 
     try:
         ptx = _extract_ptx(data)

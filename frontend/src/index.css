@@ -55,3 +55,9 @@ pre {
 /* Console */
 .console-log   { color: var(--brand-green); white-space: pre-wrap; }
 .console-error { color: #ff5c5c;            white-space: pre-wrap; }
+
+/* Spin */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

@@ -2,7 +2,10 @@ import { useState } from 'react';
 import KernelTabs, { type KernelFile } from './KernelTabs';
 
 interface EditorPanelProps {
-  onRun: (code: string) => void;
+  onRun: (kernel: string, main?: string) => void;
+  filters: {
+    execute: boolean;
+  };
 }
 
 const defaultKernelCode = `#include <cuda_runtime.h>
@@ -76,41 +79,66 @@ int main() {
     return 0;
 }`;
 
-export default function EditorPanel({ defaultCode, onRun }: EditorPanelProps) {
+const Spinner = () => (
+  <div style={{
+    width: '16px',
+    height: '16px',
+    border: '2px solid #fff',
+    borderTop: '2px solid #1a73e8',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  }} />
+);
+
+export default function EditorPanel({ onRun, filters }: EditorPanelProps) {
   const [files, setFiles] = useState<KernelFile[]>([
     { name: 'kernel.cu', code: defaultKernelCode },
     { name: 'main.cu', code: defaultMainCode }
   ]);
   const [activeTab, setActiveTab] = useState('kernel.cu');
-  const [log, setLog] = useState('');
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const [stdout, setStdout] = useState('');
+  const [stderr, setStderr] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
 
-  const handleRun = async () => {
+
+  const appendLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const line = `[${timestamp}] ${message}`;
+    setLogLines(prev => [...prev.slice(-9), line]); // 最多保留 10 筆
+  };
+
+  const handleRun = () => {
     const kernelCode = files.find(f => f.name === 'kernel.cu')?.code || '';
-    setLog(prev => prev + '▶️ Running kernel\n');
+    const mainCode = files.find(f => f.name === 'main.cu')?.code || '';
 
-    const payload = {
-      source_code: kernelCode,
-      user_arguments: '',
-      mode: 'mem',
-    };
+    appendLog(filters.execute ? '▶️ Executing main.cu' : '▶️ Running kernel.cu');
+    setStdout('');
+    setStderr('');
+    setIsRunning(true); // ✅ 開始執行
 
-    try {
-      const res = await fetch('http://localhost:8000/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+    const runPromise = filters.execute
+      ? onRun(kernelCode, mainCode)
+      : onRun(kernelCode);
+
+    runPromise
+      .then((res) => {
+        setStdout(res.stdout || '');
+        setStderr(res.stderr || '');
+        if (res.error != '') {
+          appendLog('❌ Run error');
+        } else {
+          appendLog('✅ Compile finished');
+        }
+      })
+      .catch((err: any) => {
+        setStdout('');
+        setStderr('');
+        appendLog(`❌ ${err.message || 'Run error'}`);
+      })
+      .finally(() => {
+        setIsRunning(false); // ✅ 執行結束
       });
-      const data = await res.json();
-
-      if (res.ok) {
-        setLog(prev => prev + '✅ Compile finished\n');
-        onRun(kernelCode);  // 通知 Playground 更新
-      } else {
-        throw new Error(data.detail || 'Compile error');
-      }
-    } catch (err: any) {
-      setLog(prev => prev + `❌ ${err.message}\n`);
-    }
   };
 
   return (
@@ -145,17 +173,48 @@ export default function EditorPanel({ defaultCode, onRun }: EditorPanelProps) {
           <h4 style={{ color: '#333', margin: 0 }}>Output / Console</h4>
           <button
             onClick={handleRun}
+            disabled={isRunning}
             style={{
-              background: '#007bff',
-              color: 'white',
+              backgroundColor: isRunning ? '#ccc' : '#1a73e8',
+              color: '#fff',
               border: 'none',
-              padding: '0.4rem 1rem',
-              borderRadius: '4px',
-              cursor: 'pointer',
+              padding: '0.45rem 1.1rem',
+              borderRadius: '999px',
               fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '14px',
+              gap: '0.4rem',
+              cursor: isRunning ? 'not-allowed' : 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+              transition: 'all 0.2s ease-in-out',
+            }}
+            onMouseEnter={(e) => {
+              if (!isRunning) {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1669d2';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isRunning) {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1a73e8';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
+              }
             }}
           >
-            ▶️ Run
+            {isRunning ? (
+              <>
+                <Spinner />
+                <span>Running...</span>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '16px' }}>▶︎</span>
+                <span>Run</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -169,7 +228,22 @@ export default function EditorPanel({ defaultCode, onRun }: EditorPanelProps) {
           padding: '0.5rem',
           fontSize: '14px',
         }}>
-          <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#222' }}>{log || '// No output yet'}</pre>
+          <div style={{ marginBottom: '0.5rem', color: '#333' }}>
+            <strong>Log:</strong>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+              {(logLines.length > 0 ? logLines : ['// No output yet']).join('\n')}
+            </pre>
+          </div>
+
+          <div style={{ marginBottom: '0.5rem', color: '#555' }}>
+            <strong>STDOUT:</strong>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#222' }}>{stdout || '// (empty)'}</pre>
+          </div>
+
+          <div style={{ color: '#555' }}>
+            <strong>STDERR:</strong>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#c00' }}>{stderr || '// (empty)'}</pre>
+          </div>
         </div>
       </div>
     </div>

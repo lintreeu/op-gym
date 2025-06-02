@@ -164,8 +164,8 @@ export default function MemControlPanel({
       </div>
 
       {/* Access Bases */}
-      <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6, color: '#5f6368' }}>Access Bases (Max 3)</h4>
-      <p style={{ fontSize: 13, marginBottom: 12 }}>Select up to 3 memory bases to visualize:</p>
+      <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6, color: '#5f6368' }}>Memory Access View (Max 3)</h4>
+      <p style={{ fontSize: 13, marginBottom: 12 }}>Pick up to 3 memory cubes to show</p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {baseList.map(base => {

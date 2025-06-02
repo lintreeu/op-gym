@@ -18,13 +18,17 @@ interface Props {
     activeKind?: 'load' | 'store';
     layoutMap?: Record<string, LayoutInfo>;
     colors: Record<string, string>;
+    elementSizeTable: Record<string, number>;
     onLayoutChange?: (base: string, layout: LayoutInfo['layout']) => void;
     onDimsChange?: (base: string, dims: { rows?: number; cols?: number; depth?: number }) => void;
     onParamsChange?: (param: string, value: number) => void;
 }
 
+
 export default function CudaBlockCanvasGrid(props: Props) {
+
     /* ---------- helpers ---------- */
+    console.log(props.accesses)
     const bases = Array.from(new Set(props.accesses.map(a => a.base)));
 
     const getParamSize = (filtered: Access[]) => {
@@ -114,6 +118,10 @@ export default function CudaBlockCanvasGrid(props: Props) {
                             <div style={{ fontWeight: 600 }}>{base}</div>
                             <div><b>Operation:</b> {filtered[0].kind}</div>
                             <div><b>Offset:</b> <code>{filtered[0].offset}</code></div>
+                            <div style={{ marginTop: 4 }}>
+                                <b>Element (Cube):</b> {filtered[0].eltype} ({props.elementSizeTable?.[filtered[0].eltype] ?? '?'} bytes)
+                            </div>
+
 
                             {/* Params */}
                             <div style={{ marginTop: 4 }}>

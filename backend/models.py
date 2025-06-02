@@ -1,27 +1,34 @@
-from typing import List, Dict, Literal
+from typing import List, Dict, Literal, Optional
 from pydantic import BaseModel
 
 
 # ===== 供 /run 端點沿用 --- (原) ===========================================
 class CompileFilters(BaseModel):
+    binary: bool = False
+    binaryObject: bool = False
+    execute: bool = True
     demangle: bool = True
-    ir: bool = False
-    opt: bool = False
+    directives: bool = True
+    intel: bool = True
+    labels: bool = True
+    commentOnly: bool = True
 
 
 class RunRequest(BaseModel):
-    source_code: str
+    kernel_code: str
+    main_code: Optional[str] = None
     user_arguments: str | None = None
     filters: CompileFilters = CompileFilters()
-    mode: Literal["ptx", "parsed", "mem"] = "ptx"
+    mode: Literal["ptx", "mem"] = "ptx"
+    compiler: Optional[str] = None
+
 
 
 class RunResponse(BaseModel):
-    ret: bool
     ptx: str
     stdout: str
     stderr: str
-    error: str | None = None
+    error: str  = ""
     parsed: dict | None = None
 
 

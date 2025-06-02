@@ -55,11 +55,14 @@ pred: "@" REG
 opcode: IDENT
 operand_list: operand (COMMA operand)*
 operand: REG FIELD?
+       | reg_group
        | IMM_HEX
        | IMM
        | MEM
        | LABEL
        | IDENT
+
+reg_group: "{" REG (COMMA REG)* "}"
 """
 
 ENTRY_RE = re.compile(
@@ -174,11 +177,21 @@ def _ast_to_instr(tree: Tree, lines: List[str]) -> List[Instruction | LabelNode]
             for t in ops_node.children:
                 if isinstance(t, Token) and t.type == "COMMA":
                     continue
-                ops.append(
-                    "".join(tok.value for tok in t.children)
-                    if isinstance(t, Tree)
-                    else t.value
-                )
+                if isinstance(t, Tree):
+                    if t.data == "reg_group":
+                        # 展開 register group
+                        regs = [child.value for child in t.children if isinstance(child, Token) and child.type == "REG"]
+                        ops.append(regs)  # 以 list 形式保留
+                    else:
+                        token_str = ''.join(
+                            child.value if isinstance(child, Token) else str(child)
+                            for child in t.children
+                        )
+                        ops.append(token_str)
+                elif isinstance(t, Token):
+                    ops.append(t.value)
+                else:
+                    ops.append(str(t))
         out.append(
             Instruction(
                 idx=idx,
@@ -311,67 +324,60 @@ def _analyze_mem(blocks, alias):
     for bb in blocks:
         for ins in bb.instrs:
             eng.handle(ins)
-            
-            if ins.opcode.startswith(("ld.global", "st.global")):
 
-                kind = "load" if ins.opcode.startswith("ld.") else "store"
-                eltype = _extract_type(ins.opcode)
-                elsize = ELEMENT_SIZE.get(eltype, 4)
+            if not ins.opcode.startswith(("ld.global", "st.global")):
+                continue
 
-                # 確認 memory address 是在第幾個 operand
-                addr_operand_idx = 1 if kind == "load" else 0
-                if addr_operand_idx >= len(ins.operands):
-                    continue
-                m = re.search(r"\[(.+)\]", ins.operands[addr_operand_idx])
-                if not m:
-                    continue
-                addr_expr = m.group(1).strip()
+            kind = "load" if ins.opcode.startswith("ld.") else "store"
+            eltype = _extract_type(ins.opcode)
+            elsize = ELEMENT_SIZE.get(eltype, 4)
 
+            # 向量 register group
+            is_vector = isinstance(ins.operands[0], list)
+            reg_group = ins.operands[0] if is_vector else None
+            addr_operand_idx = 1 if is_vector else (1 if kind == "load" else 0)
 
-                # 支援 [%rd + imm]
-                if "+" in addr_expr:
-                    parts = [p.strip() for p in addr_expr.split("+", 1)]
-                    reg_expr = eng._v(parts[0])
-                    imm_expr = eng._v(parts[1])
-                    offset_expr = f"({reg_expr}+{imm_expr})"
+            if addr_operand_idx >= len(ins.operands):
+                continue
+            addr = ins.operands[addr_operand_idx]
+            if isinstance(addr, list):  # 意外情況
+                continue
+            m = re.search(r"\[(.+)\]", addr)
+            if not m:
+                continue
+            base_expr = m.group(1).strip()
+            base_resolved = eng._v(base_expr)
+
+            param_used = sorted(name for slot, name in alias.items() if name in base_resolved)
+            base_param = next((name for name in param_used if name in base_resolved), None)
+
+            def compute_offset(index: int) -> str:
+                expr = f"({base_resolved}+{index * elsize})" if index > 0 else base_resolved
+                if base_param and expr != base_param:
+                    offset = expr.replace(base_param, "").lstrip("+").strip()
                 else:
-                    offset_expr = eng._v(addr_expr)
+                    offset = "0"
+                return re.sub(rf"\b{elsize}\b", f"element_size_{eltype}", offset)
 
-                full_expr = offset_expr
-                params_used = sorted(
-                    {
-                        name
-                        for slot, name in alias.items()
-                        if name in full_expr
-                    }
-                )
-                base_param = next(
-                    (name for name in params_used if name in offset_expr), None
-                )
-
-                if base_param and full_expr != base_param:
-                    offset_clean = (
-                        full_expr.replace(base_param, "")
-                        .lstrip("+")
-                        .strip()
-                    )
-                else:
-                    offset_clean = "0"
-
-                offset_clean = re.sub(
-                    rf"\b{elsize}\b", f"element_size_{eltype}", offset_clean
-                )
-
-                result.append(
-                    dict(
+            if is_vector:
+                for i, reg in enumerate(reg_group):
+                    result.append(dict(
                         kind=kind,
-                        param=params_used,
-                        base=base_param if base_param else full_expr,
-                        offset=offset_clean,
+                        param=param_used,
+                        base=base_param or base_resolved,
+                        offset=compute_offset(i),
                         eltype=eltype,
-                        raw=ins.raw,
-                    )
-                )
+                        raw=ins.raw + f"  // vector[{i}]"
+                    ))
+            else:
+                result.append(dict(
+                    kind=kind,
+                    param=param_used,
+                    base=base_param or base_resolved,
+                    offset=compute_offset(0),
+                    eltype=eltype,
+                    raw=ins.raw
+                ))
     print(result)
     return result
 

@@ -9,7 +9,7 @@ import {
 
 /* ---------- 常數 ---------- */
 const CUBE_SIZE = 0.5;
-const BOX_GEOM  = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
+const BOX_GEOM = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
 const EDGE_GEOM = new THREE.EdgesGeometry(BOX_GEOM);
 
 /* ---------- 小元件 ---------- */
@@ -110,28 +110,30 @@ export default function CudaBlock3DViewer({
   const activeOffsets = useMemo(() => {
     const set = baseAccessMap[base] ?? new Set<number>();
     const res = new Set<number>();
-    accesses.forEach(acc => { if (!activeKind || acc.kind === activeKind) set.forEach(o => res.add(o)); });
+    accesses.forEach(acc => {
+      baseAccessMap[acc.base]?.forEach(o => res.add(o));
+    });
     return res;
   }, [accesses, baseAccessMap, activeKind, base]);
 
   /* layout --------------------------------------------------------------- */
   const L = layoutInfo?.layout ?? '1d';
-  const R = layoutInfo?.dims?.rows  ?? 1;
-  const C = layoutInfo?.dims?.cols  ?? 1;
+  const R = layoutInfo?.dims?.rows ?? 1;
+  const C = layoutInfo?.dims?.cols ?? 1;
   const D = layoutInfo?.dims?.depth ?? 1;
-  const total = L === '1d' ? R : L.startsWith('3d') ? R*C*D : R*C;
+  const total = L === '1d' ? R : L.startsWith('3d') ? R * C * D : R * C;
 
   const toCoord = (idx: number): [number, number, number] => {
-    if (L === '1d')               return [idx, 0, 0];
-    if (L === 'row-major')        return [idx % C, Math.floor(idx / C), 0];
-    if (L === 'col-major')        return [Math.floor(idx / R), idx % R, 0];
+    if (L === '1d') return [idx, 0, 0];
+    if (L === 'row-major') return [idx % C, Math.floor(idx / C), 0];
+    if (L === 'col-major') return [Math.floor(idx / R), idx % R, 0];
     const rc = R * C, d = Math.floor(idx / rc), rem = idx % rc;
-    if (L === '3d-row-major')     return [rem % C, Math.floor(rem / C), d];
+    if (L === '3d-row-major') return [rem % C, Math.floor(rem / C), d];
     return [Math.floor(rem / R), rem % R, d];        // 3d-col-major
   };
 
   /* spacing -------------------------------------------------------------- */
-  const sp   = CUBE_SIZE * 1.1;
+  const sp = CUBE_SIZE * 1.1;
   const maxX = L === '1d' ? R : C, maxY = L === '1d' ? 1 : R, maxZ = L.startsWith('3d') ? D : 1;
   const offX = (maxX - 1) / 2, offY = (maxY - 1) / 2, offZ = (maxZ - 1) / 2;
 
@@ -156,9 +158,11 @@ export default function CudaBlock3DViewer({
   const axes = useMemo(() => {
     const mk = (d: THREE.Vector3, c: number) =>
       new THREE.ArrowHelper(d, new THREE.Vector3, Math.max(maxX, maxY, maxZ) * sp * 0.7, c);
-    return { x: mk(new THREE.Vector3(1, 0, 0), 0xff0000),
-             y: mk(new THREE.Vector3(0, 1, 0), 0x00ff00),
-             z: mk(new THREE.Vector3(0, 0, 1), 0x0000ff) };
+    return {
+      x: mk(new THREE.Vector3(1, 0, 0), 0xff0000),
+      y: mk(new THREE.Vector3(0, 1, 0), 0x00ff00),
+      z: mk(new THREE.Vector3(0, 0, 1), 0x0000ff)
+    };
   }, [maxX, maxY, maxZ, sp]);
 
   /* render --------------------------------------------------------------- */
@@ -168,9 +172,25 @@ export default function CudaBlock3DViewer({
       <primitive object={axes.x} />
       <primitive object={axes.y} />
       <primitive object={axes.z} />
-      <Text position={[maxX*sp*0.8,0,0]} fontSize={0.25} color="#ff0000">+x</Text>
-      <Text position={[0,maxY*sp*0.8,0]} fontSize={0.25} color="#00ff00">+y</Text>
-      <Text position={[0,0,maxZ*sp*0.8]} fontSize={0.25} color="#0000ff">+z</Text>
+      <Text position={[maxX * sp * 0.8, 0, 0]} fontSize={0.25} color="#ff0000">+x</Text>
+      <Text position={[0, maxY * sp * 0.8, 0]} fontSize={0.25} color="#00ff00">+y</Text>
+      <Text position={[0, 0, maxZ * sp * 0.8]} fontSize={0.25} color="#0000ff">+z</Text>
+
+      {/* 顯示 load/store label */}
+      {(() => {
+        const kinds = new Set(accesses.map(a => a.kind));
+        const labelPos: [number, number, number] = [-(maxX * sp * 0.7), maxY * sp * 0.7, maxZ * sp * 0.6];
+        const texts = [];
+
+        if (kinds.has('load')) {
+          texts.push(<Text key="load" position={labelPos} fontSize={0.25} color="limegreen" anchorX="left" anchorY="top">load</Text>);
+        }
+        if (kinds.has('store')) {
+          texts.push(<Text key="store" position={[labelPos[0], labelPos[1] - 0.4, labelPos[2]]} fontSize={0.25} color="crimson" anchorX="left" anchorY="top">store</Text>);
+        }
+        return texts;
+      })()}
     </group>
   );
+
 }

@@ -10,7 +10,7 @@ export type Access = {
 export type Dim3 = { x: number; y: number; z: number };
 
 /**
- * 將 CUDA 風格的 threadIdx.x / blockDim.x 等替換成合法 JS 名稱
+ * 將 CUDA 風格的變數名稱替換成合法 JS 名稱
  */
 function sanitizeExpr(expr: string): string {
   return expr
@@ -22,11 +22,12 @@ function sanitizeExpr(expr: string): string {
     .replace(/\bblockIdx\.z\b/g, 'blockIdx_z')
     .replace(/\bblockDim\.x\b/g, 'blockDim_x')
     .replace(/\bblockDim\.y\b/g, 'blockDim_y')
-    .replace(/\bblockDim\.z\b/g, 'blockDim_z');
+    .replace(/\bblockDim\.z\b/g, 'blockDim_z')
+    .replace(/\barg(\d+)\b/g, 'arg$1');
 }
 
 /**
- * Evaluate memory access expressions across all threadIdx.x for a given blockIdx.
+ * Evaluate memory access expressions across all threads in a block
  */
 export function evaluateAccessOffsets(
   accesses: Access[],
@@ -52,6 +53,7 @@ export function evaluateAccessOffsets(
         blockDim_x: blockDim.x,
         blockDim_y: blockDim.y ?? 1,
         blockDim_z: blockDim.z ?? 1,
+        [`element_size_${acc.eltype}`]: 1  // <--- 強制該 element_size 為 1
       };
 
       const expr = sanitizeExpr(acc.offset);
@@ -59,8 +61,7 @@ export function evaluateAccessOffsets(
       try {
         const fn = new Function(...Object.keys(ctx), `return ${expr};`);
         const offset = fn(...Object.values(ctx));
-        console.log(offset)
-        result[base].add(Math.floor(offset)); // treat offset as unit=1
+        result[base].add(Math.floor(offset));
       } catch (e) {
         console.warn("eval error:", acc.offset, e);
       }
