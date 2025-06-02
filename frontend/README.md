@@ -3,7 +3,7 @@
 **Op-Gym**  是一個 GPU 記憶體存取視覺化平台，協助使用者從編輯、編譯到分析，探索 GPU kernel 在記憶體佈局、存取以及 thread/block 的配置方式。
 ![CUDA-Gym Overview](./assets/public/demo-overview.png)
 
-## 🎯 目標功能
+## 目標功能
 
 - 提供互動式 CUDA / Triton 編輯器與執行環境
 - 支援 kernel 編譯後的 PTX 記憶體分析
@@ -11,7 +11,7 @@
 - 以 3D cube 呈現多個參數的記憶訪問範圍
 - 支援 1D / 2D / 3D 記憶體 layout 選擇與參數調整
 
-## ✅ 目前功能
+## 目前功能
 
 - 編輯與執行 `kernel.cu` / `main.cu`
 - 使用呼叫 [Godbolt](https://godbolt.org/) 雲端 NVCC 服務方式進行編譯
