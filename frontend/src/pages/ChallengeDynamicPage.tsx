@@ -1,14 +1,35 @@
-// src/pages/ChallengeDynamicPage.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import PlaygroundPage from './PlaygroundPage';
+import { type KernelFile } from '../components/KernelTabs';
 
 export default function ChallengeDynamicPage() {
   const { challengeId } = useParams();
+  const [files, setFiles] = useState<KernelFile[] | null>(null);
 
-  return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold">Challenge: {challengeId}</h2>
-      <p>展示此挑戰對應的說明與編輯器，未來可根據 `{challengeId}` 載入不同預設碼或題目內容。</p>
-    </div>
-  );
+  useEffect(() => {
+    if (!challengeId) return;
+
+    const loadFiles = async () => {
+      try {
+        const kernelRes = await fetch(`/src/challenges/${challengeId}/kernel.cu`);
+        const mainRes = await fetch(`/src/challenges/${challengeId}/main.cu`);
+        const kernelCode = await kernelRes.text();
+        const mainCode = await mainRes.text();
+        setFiles([
+          { name: 'kernel.cu', code: kernelCode },
+          { name: 'main.cu', code: mainCode },
+        ]);
+      } catch (err) {
+        console.error('Failed to load challenge files', err);
+        setFiles(null);
+      }
+    };
+
+    loadFiles();
+  }, [challengeId]);
+
+  if (!files) return <div style={{ padding: 20 }}>Loading challenge files...</div>;
+
+  return <PlaygroundPage defaultFiles={files} />;
 }

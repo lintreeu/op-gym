@@ -88,7 +88,6 @@ const hslToHex = (h: number, s: number, l: number): string => {
 
 /* ---------- 依主色產生漸層 ---------- */
 const makeGradient = (hex: string) => {
-  console.log(hex)
   const { h, s } = hexToHsl(hex);
   return (t: number) => hslToHex(h, s, 85 - 55 * t); // L: 85 → 30
 };
@@ -98,7 +97,6 @@ export default function CudaBlock3DViewer({
   accesses, blockDim, blockIdx, params, layoutInfo, activeKind, colors = {},
 }: Props) {
   const base = accesses[0].base;
-  console.log(colors)
   const mainColor = colors[base] ?? '#4da8ff';
   const gradColor = makeGradient(mainColor);
 

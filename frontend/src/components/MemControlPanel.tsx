@@ -115,7 +115,7 @@ export default function MemControlPanel({
   return (
     <div
       style={{
-        padding: '1.5rem',
+        padding: '2rem',
         background: '#f8f9fa',
         overflowY: 'auto',
         overflowX: 'hidden',
@@ -192,7 +192,6 @@ export default function MemControlPanel({
                 <MiniCube color={color} />
               </button>
 
-              {/* base 名稱 */}
               <div style={{ fontSize: 12, marginTop: 2, color: '#333' }}>{base}</div>
 
               {/* color picker */}

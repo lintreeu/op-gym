@@ -6,14 +6,13 @@ import ExecuteToggle from '../components/ExecuteToggle';
 import { NVCC_COMPILERS } from '../constants/NVCCVersions';
 import { type Access } from '../utils/evaluateAccessOffsets';
 
+interface Props {
+  defaultFiles?: KernelFile[];
+}
 
-const dummyAccesses: Access[] = [
 
-];
-
-const dummyParams = {
-
-};
+const dummyAccesses: Access[] = [];
+const dummyParams = {};
 
 function hashBaseToColor(base: string): string {
   let hash = 0;
@@ -24,7 +23,13 @@ function hashBaseToColor(base: string): string {
   return `hsl(${hue}, 65%, 60%)`; // 較柔和的彩色調
 }
 
-export default function PlaygroundPage() {
+export default function PlaygroundPage({ defaultFiles }: Props) {
+  const [files, setFiles] = useState<KernelFile[]>(
+    defaultFiles ?? [
+      { name: 'kernel.cu', code: '' },
+      { name: 'main.cu', code: '' },
+    ]
+  );
   const [blockDim, setBlockDim] = useState({ x: 5, y: 0, z: 0 });
   const [blockIdx, setBlockIdx] = useState({ x: 0, y: 0, z: 0 });
   const [basePos, setBasePos] = useState({ x: 0, y: 0, z: 0 });
@@ -194,7 +199,7 @@ export default function PlaygroundPage() {
       <div style={{ display: 'flex', height: 'calc(100vh - 60px)', width: '100vw', overflow: 'hidden', backgroundColor: '#f7f7f7' }}>
         {/* Left: Editor */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <EditorPanel onRun={handleRun} filters={filters} />
+          <EditorPanel onRun={handleRun} filters={filters} files={files} setFiles={setFiles} />
         </div>
 
         {/* Right: Visualizer and Panel */}
@@ -273,12 +278,12 @@ export default function PlaygroundPage() {
               border: '1px solid #ccc',
               padding: '0.5rem',
               borderRadius: '6px',
-              height: '100%',
+              height: '85%',
               overflowY: 'auto',
               marginTop: '0.75rem',
               fontSize: '14px',
             }}>
-              {ptx || '(Reserved for memory access info, logs, etc.)'}
+              {ptx || ''}
             </pre>
           </div>
         </div>

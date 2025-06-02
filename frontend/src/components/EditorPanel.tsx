@@ -1,83 +1,15 @@
+// src/components/EditorPanel.tsx
 import { useState } from 'react';
 import KernelTabs, { type KernelFile } from './KernelTabs';
 
 interface EditorPanelProps {
+  files: KernelFile[];
+  setFiles: (files: KernelFile[]) => void;
   onRun: (kernel: string, main?: string) => void;
   filters: {
     execute: boolean;
   };
 }
-
-const defaultKernelCode = `#include <cuda_runtime.h>
-#include <iostream>
-#include <vector>
-#include <cmath>
-
-__global__ void softmax_kernel(const float* __restrict__ input, float* __restrict__ output, int cols) {
-    extern __shared__ float shared[];
-
-    int row = blockIdx.x;
-    int tid = threadIdx.x;
-
-    // Load input to shared memory
-    float val = -INFINITY;
-    if (tid < cols) {
-        val = input[row * cols + tid];
-        shared[tid] = val;
-    }
-    __syncthreads();
-
-    // Compute max
-    float max_val = -INFINITY;
-    for (int i = 0; i < cols; ++i)
-        max_val = fmaxf(max_val, shared[i]);
-
-    // Compute exp
-    float sum_exp = 0.0f;
-    for (int i = 0; i < cols; ++i) {
-        shared[i] = expf(shared[i] - max_val);
-        sum_exp += shared[i];
-    }
-
-    // Normalize
-    if (tid < cols) {
-        output[row * cols + tid] = shared[tid] / sum_exp;
-    }
-}`;
-
-const defaultMainCode = `
-int main() {
-    const int rows = 2;
-    const int cols = 4;
-
-    std::vector<float> h_input = {
-        1.0f, 2.0f, 3.0f, 4.0f,
-        2.0f, 1.0f, 0.0f, -1.0f
-    };
-    std::vector<float> h_output(rows * cols);
-
-    float *d_input, *d_output;
-    cudaMalloc(&d_input, sizeof(float) * rows * cols);
-    cudaMalloc(&d_output, sizeof(float) * rows * cols);
-
-    cudaMemcpy(d_input, h_input.data(), sizeof(float) * rows * cols, cudaMemcpyHostToDevice);
-
-    softmax_kernel<<<rows, cols, sizeof(float) * cols>>>(d_input, d_output, cols);
-
-    cudaMemcpy(h_output.data(), d_output, sizeof(float) * rows * cols, cudaMemcpyDeviceToHost);
-
-    for (int r = 0; r < rows; ++r) {
-        std::cout << "Row " << r << ": ";
-        for (int c = 0; c < cols; ++c) {
-            std::cout << h_output[r * cols + c] << " ";
-        }
-        std::cout << "\\n";
-    }
-
-    cudaFree(d_input);
-    cudaFree(d_output);
-    return 0;
-}`;
 
 const Spinner = () => (
   <div style={{
@@ -90,17 +22,12 @@ const Spinner = () => (
   }} />
 );
 
-export default function EditorPanel({ onRun, filters }: EditorPanelProps) {
-  const [files, setFiles] = useState<KernelFile[]>([
-    { name: 'kernel.cu', code: defaultKernelCode },
-    { name: 'main.cu', code: defaultMainCode }
-  ]);
+export default function EditorPanel({ files, setFiles, onRun, filters }: EditorPanelProps) {
   const [activeTab, setActiveTab] = useState('kernel.cu');
   const [logLines, setLogLines] = useState<string[]>([]);
   const [stdout, setStdout] = useState('');
   const [stderr, setStderr] = useState('');
   const [isRunning, setIsRunning] = useState(false);
-
 
   const appendLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
@@ -115,7 +42,7 @@ export default function EditorPanel({ onRun, filters }: EditorPanelProps) {
     appendLog(filters.execute ? '▶️ Executing main.cu' : '▶️ Running kernel.cu');
     setStdout('');
     setStderr('');
-    setIsRunning(true); // ✅ 開始執行
+    setIsRunning(true);
 
     const runPromise = filters.execute
       ? onRun(kernelCode, mainCode)
@@ -125,7 +52,7 @@ export default function EditorPanel({ onRun, filters }: EditorPanelProps) {
       .then((res) => {
         setStdout(res.stdout || '');
         setStderr(res.stderr || '');
-        if (res.error != '') {
+        if (res.error !== '') {
           appendLog('❌ Run error');
         } else {
           appendLog('✅ Compile finished');
@@ -137,7 +64,7 @@ export default function EditorPanel({ onRun, filters }: EditorPanelProps) {
         appendLog(`❌ ${err.message || 'Run error'}`);
       })
       .finally(() => {
-        setIsRunning(false); // ✅ 執行結束
+        setIsRunning(false);
       });
   };
 
@@ -191,16 +118,18 @@ export default function EditorPanel({ onRun, filters }: EditorPanelProps) {
             }}
             onMouseEnter={(e) => {
               if (!isRunning) {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1669d2';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                const btn = e.currentTarget as HTMLButtonElement;
+                btn.style.backgroundColor = '#1669d2';
+                btn.style.transform = 'translateY(-2px)';
+                btn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isRunning) {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1a73e8';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
+                const btn = e.currentTarget as HTMLButtonElement;
+                btn.style.backgroundColor = '#1a73e8';
+                btn.style.transform = 'translateY(0)';
+                btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
               }
             }}
           >
@@ -231,18 +160,18 @@ export default function EditorPanel({ onRun, filters }: EditorPanelProps) {
           <div style={{ marginBottom: '0.5rem', color: '#333' }}>
             <strong>Log:</strong>
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-              {(logLines.length > 0 ? logLines : ['// No output yet']).join('\n')}
+              {(logLines.length > 0 ? logLines : ['']).join('\n')}
             </pre>
           </div>
 
           <div style={{ marginBottom: '0.5rem', color: '#555' }}>
             <strong>STDOUT:</strong>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#222' }}>{stdout || '// (empty)'}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#222' }}>{stdout || ''}</pre>
           </div>
 
           <div style={{ color: '#555' }}>
             <strong>STDERR:</strong>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#c00' }}>{stderr || '// (empty)'}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#c00' }}>{stderr || ''}</pre>
           </div>
         </div>
       </div>
