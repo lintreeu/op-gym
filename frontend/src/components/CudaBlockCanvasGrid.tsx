@@ -115,7 +115,20 @@ export default function CudaBlockCanvasGrid(props: Props) {
                         <div style={{ flex: '1 1 0', padding: 8, fontSize: 13 }}>
                             <div style={{ fontWeight: 600 }}>{base}</div>
                             <div><b>Operation:</b> {filtered[0].kind}</div>
-                            <div><b>Offset:</b> <code>{filtered[0].offset}</code></div>
+                            <div>
+                                <b>Offset:</b>
+                                <pre style={{
+                                    backgroundColor: '#eee',
+                                    padding: '8px 12px',
+                                    borderRadius: '4px',
+                                    fontFamily: 'Consolas, monospace',
+                                    whiteSpace: 'pre-wrap',
+                                    marginTop: '4px'
+                                }}>
+                                    {filtered[0].offset}
+                                </pre>
+                            </div>
+
                             <div style={{ marginTop: 4 }}>
                                 <b>Element (Cube):</b> {filtered[0].eltype} ({props.elementSizeTable?.[filtered[0].eltype] ?? '?'} bytes)
                             </div>
