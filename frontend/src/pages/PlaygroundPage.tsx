@@ -6,6 +6,7 @@ import ExecuteToggle from '../components/ExecuteToggle';
 import { NVCC_COMPILERS } from '../constants/NVCCVersions';
 import { type Access } from '../utils/evaluateAccessOffsets';
 import type { KernelFile } from '../components/KernelTabs';
+import { API_BASE } from '../constants/api';
 
 
 
@@ -77,14 +78,13 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
     ];
 
     try {
-      const response = await fetch('http://localhost:8000/run', {
+      const response = await fetch(`${API_BASE}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
-      console.log('[run] result =', data);
 
       // ---- 錯誤處理 ----------------------------------------------------
       if (!response.ok) {
@@ -138,7 +138,7 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
       };
 
     } catch (err: any) {
-      console.error('[CUDA-Gym] Compilation or fetch failed:', err);
+      console.error('Compilation or fetch failed:', err);
       return {
         stdout: '',
         stderr: '',
@@ -163,7 +163,7 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
         fontFamily: 'sans-serif'
       }}>
         <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#202124' }}>
-          <span style={{ color: '#4285F4' }}>Op</span> Gym
+          <span style={{ color: '#4285F4' }}>Op</span>-Gym
 
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.95rem', color: '#5f6368' }}>
