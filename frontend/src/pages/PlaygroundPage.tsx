@@ -6,7 +6,8 @@ import ExecuteToggle from '../components/ExecuteToggle';
 import { NVCC_COMPILERS } from '../constants/NVCCVersions';
 import { type Access } from '../utils/evaluateAccessOffsets';
 import type { KernelFile } from '../components/KernelTabs';
-import { API_BASE } from '../constants/api';
+import cubeLogo from '../assets/cube.svg';
+import { API_BASE } from '../constants/API';
 
 
 
@@ -162,8 +163,15 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
         borderBottom: '1px solid #e0e0e0',
         fontFamily: 'sans-serif'
       }}>
-        <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#202124' }}>
-          <span style={{ color: '#4285F4' }}>Op</span>-Gym
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src={cubeLogo} alt="Logo" style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '3px'
+          }} />
+          <span>
+            <span style={{ color: '#4285F4' }}>Op-</span>Gym
+          </span>
 
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.95rem', color: '#5f6368' }}>

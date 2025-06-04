@@ -27,7 +27,6 @@ interface Props {
 export default function CudaBlockCanvasGrid(props: Props) {
 
     /* ---------- helpers ---------- */
-    console.log(props.accesses)
     const bases = Array.from(new Set(props.accesses.map(a => a.base)));
 
     const getParamSize = (filtered: Access[]) => {

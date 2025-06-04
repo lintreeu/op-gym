@@ -1,35 +1,39 @@
-import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import PlaygroundPage from './PlaygroundPage';
-import { type KernelFile } from '../components/KernelTabs';
+import type { KernelFile } from '../components/KernelTabs';
+import { getKernelUrl, getMainUrl } from '../constants/CHALLENGES';
 
 export default function ChallengeDynamicPage() {
-  const { challengeId } = useParams();
+  const { challengeId } = useParams<{ challengeId: string }>();
   const [files, setFiles] = useState<KernelFile[] | null>(null);
 
   useEffect(() => {
-    if (!challengeId) return;
-
-    const loadFiles = async () => {
+    async function loadChallenge() {
       try {
-        const kernelRes = await fetch(`/src/challenges/${challengeId}/kernel.cu`);
-        const mainRes = await fetch(`/src/challenges/${challengeId}/main.cu`);
+        const [kernelRes, mainRes] = await Promise.all([
+          fetch(getKernelUrl(challengeId!)),
+          fetch(getMainUrl(challengeId!))
+        ]);
+
+        if (!kernelRes.ok || !mainRes.ok) throw new Error('Challenge not found');
+
         const kernelCode = await kernelRes.text();
         const mainCode = await mainRes.text();
+
         setFiles([
           { name: 'kernel.cu', code: kernelCode },
-          { name: 'main.cu', code: mainCode },
+          { name: 'main.cu', code: mainCode }
         ]);
       } catch (err) {
-        console.error('Failed to load challenge files', err);
+        console.error(err);
         setFiles(null);
       }
-    };
+    }
 
-    loadFiles();
+    if (challengeId) loadChallenge();
   }, [challengeId]);
 
-  if (!files) return <div style={{ padding: 20 }}>Loading challenge files...</div>;
-
+  if (!files) return <p>Loading...</p>;
   return <PlaygroundPage defaultFiles={files} />;
 }

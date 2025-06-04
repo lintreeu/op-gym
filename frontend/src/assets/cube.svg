@@ -1,0 +1,29 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="black"></rect>
+  <g transform="rotate(-30 60 60) skewX(20) scale(1, 0.8)">
+    <!-- Face 1: Left -->
+    <g fill="#4CAF50">
+      <rect x="10" y="10" width="20" height="20"></rect>
+      <rect x="10" y="35" width="20" height="20"></rect>
+      <rect x="10" y="60" width="20" height="20"></rect>
+      <rect x="35" y="10" width="20" height="20"></rect>
+      <rect x="35" y="35" width="20" height="20"></rect>
+      <rect x="35" y="60" width="20" height="20"></rect>
+      <rect x="60" y="10" width="20" height="20"></rect>
+      <rect x="60" y="35" width="20" height="20"></rect>
+      <rect x="60" y="60" width="20" height="20"></rect>
+    </g>
+    <!-- Face 2: Top -->
+    <g fill="#FFC107">
+      <rect x="10" y="-15" width="20" height="20"></rect>
+      <rect x="35" y="-15" width="20" height="20"></rect>
+      <rect x="60" y="-15" width="20" height="20"></rect>
+    </g>
+    <!-- Face 3: Right -->
+    <g fill="#2196F3">
+      <rect x="85" y="10" width="20" height="20"></rect>
+      <rect x="85" y="35" width="20" height="20"></rect>
+      <rect x="85" y="60" width="20" height="20"></rect>
+    </g>
+  </g>
+</svg>
