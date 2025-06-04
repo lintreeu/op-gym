@@ -5,7 +5,9 @@ export type Access = {
   base: string;
   offset: string;
   eltype: string;
+  param: string[];         
 };
+
 
 export type Dim3 = { x: number; y: number; z: number };
 

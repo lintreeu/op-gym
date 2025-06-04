@@ -1,4 +1,3 @@
-import React from 'react';
 import MiniCube from './MiniCube';
 
 /* ---------- 共用小元件 ---------- */

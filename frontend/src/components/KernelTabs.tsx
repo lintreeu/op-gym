@@ -1,6 +1,6 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@radix-ui/react-tabs';
 import Editor from '@monaco-editor/react';
-import { useEffect, useState } from 'react';
+import { useEffect} from 'react';
 
 export type KernelFile = {
   name: string;

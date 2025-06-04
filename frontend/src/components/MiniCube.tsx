@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { Canvas } from '@react-three/fiber';
 
 interface Props { color: string; style?: CSSProperties; }

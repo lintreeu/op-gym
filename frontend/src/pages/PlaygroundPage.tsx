@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import EditorPanel from '../components/EditorPanel';
 import CudaBlockCanvasGrid from '../components/CudaBlockCanvasGrid';
 import MemControlPanel from '../components/MemControlPanel';
 import ExecuteToggle from '../components/ExecuteToggle';
 import { NVCC_COMPILERS } from '../constants/NVCCVersions';
 import { type Access } from '../utils/evaluateAccessOffsets';
+import type { KernelFile } from '../components/KernelTabs';
+
+
 
 interface Props {
   defaultFiles?: KernelFile[];
@@ -32,8 +35,6 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
   );
   const [blockDim, setBlockDim] = useState({ x: 5, y: 0, z: 0 });
   const [blockIdx, setBlockIdx] = useState({ x: 0, y: 0, z: 0 });
-  const [basePos, setBasePos] = useState({ x: 0, y: 0, z: 0 });
-  const [log, setLog] = useState('');
   const [ptx, setPtx] = useState('');
   const [accesses, setAccesses] = useState<Access[]>(dummyAccesses);
   const [params, setParams] = useState<Record<string, number>>(dummyParams);
@@ -55,7 +56,7 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
 
 
   const [layoutMap, setLayoutMap] = useState<Record<string, {
-    layout: '1d' | 'row-major' | 'col-major' | '3d';
+    layout: '1d' | 'row-major' | 'col-major' | '3d-row-major' | '3d-col-major';
     dims: { rows?: number; cols?: number; depth?: number };
   }>>({});
 
@@ -112,7 +113,7 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
       setParams(newParams);
 
       // 計算目前 base 列表
-      const bases = Array.from(new Set(data.parsed?.accesses?.map((a: any) => a.base)));
+      const bases = Array.from(new Set(data.parsed?.accesses?.map((a: any) => a.base))) as string[];
       setActiveBases(bases.slice(0, 3));  // 預設開啟前 3 個 base 可視化
 
       // 配色處理：保留舊色，新的用 palette or fallback
@@ -256,10 +257,6 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
                 setBlockDim={setBlockDim}
                 blockIdx={blockIdx}
                 setBlockIdx={setBlockIdx}
-                base={basePos}
-                setBase={setBasePos}
-                params={params}
-                setParams={setParams}
                 activeBases={activeBases}
                 setActiveBases={setActiveBases}
                 colors={colors}

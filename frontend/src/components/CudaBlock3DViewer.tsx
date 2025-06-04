@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
 import {
@@ -45,6 +45,7 @@ interface Props {
   accesses: Access[];
   blockDim: Dim3;
   blockIdx: Dim3;
+  baseSize: number;
   params: Record<string, number>;
   colors?: Record<string, string>;           // base → hex 主色
   activeKind?: 'load' | 'store';
@@ -106,7 +107,6 @@ export default function CudaBlock3DViewer({
     [accesses, blockDim, blockIdx, params]
   );
   const activeOffsets = useMemo(() => {
-    const set = baseAccessMap[base] ?? new Set<number>();
     const res = new Set<number>();
     accesses.forEach(acc => {
       baseAccessMap[acc.base]?.forEach(o => res.add(o));

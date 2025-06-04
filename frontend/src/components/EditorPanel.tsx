@@ -1,4 +1,3 @@
-// src/components/EditorPanel.tsx
 import { useState } from 'react';
 import KernelTabs, { type KernelFile } from './KernelTabs';
 
@@ -44,12 +43,12 @@ export default function EditorPanel({ files, setFiles, onRun, filters }: EditorP
     setStderr('');
     setIsRunning(true);
 
-    const runPromise = filters.execute
-      ? onRun(kernelCode, mainCode)
-      : onRun(kernelCode);
+    const runPromise = Promise.resolve(
+      filters.execute ? onRun(kernelCode, mainCode) : onRun(kernelCode)
+    );
 
     runPromise
-      .then((res) => {
+      .then((res: any) => {
         setStdout(res.stdout || '');
         setStderr(res.stderr || '');
         if (res.error !== '') {
