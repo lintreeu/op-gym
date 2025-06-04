@@ -6,6 +6,7 @@ import ExecuteToggle from '../components/ExecuteToggle';
 import { NVCC_COMPILERS } from '../constants/NVCCVersions';
 import { type Access } from '../utils/evaluateAccessOffsets';
 import type { KernelFile } from '../components/KernelTabs';
+import { Link } from 'react-router-dom';
 import cubeLogo from '../assets/cube.svg';
 import { API_BASE } from '../constants/API';
 
@@ -164,11 +165,18 @@ export default function PlaygroundPage({ defaultFiles }: Props) {
         fontFamily: 'sans-serif'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src={cubeLogo} alt="Logo" style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '3px'
-          }} />
+          <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
+            <img
+              src={cubeLogo}
+              alt="Logo"
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '3px',
+                cursor: 'pointer'
+              }}
+            />
+          </Link>
           <span>
             <span style={{ color: '#4285F4' }}>Op-</span>Gym
           </span>
