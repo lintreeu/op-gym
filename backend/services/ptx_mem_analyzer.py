@@ -32,6 +32,7 @@ GRAMMAR = r"""
 COMMENT: "//" /[^\n]*/
 
 REG: /%[a-zA-Z_][a-zA-Z0-9_]*/
+COMPOSITE_REG: REG "|" REG
 FIELD: /\.(?:[xyz]|lo|hi)/
 IMM_HEX: /0[fFdD][0-9a-fA-F]{8}/
 IMM: /-?\d+(?:\.\d+)?(?![A-Za-z])/
@@ -54,7 +55,8 @@ instruction: pred? opcode operand_list? -> instruction
 pred: "@" REG
 opcode: IDENT
 operand_list: operand (COMMA operand)*
-operand: REG FIELD?
+operand: COMPOSITE_REG
+       | REG FIELD?
        | reg_group
        | IMM_HEX
        | IMM
@@ -110,7 +112,6 @@ class BasicBlock:
     instrs: List[Instruction]
 
 
-# --------------------------------------------------------------------------
 def _parse_header_and_strip(ptx: str) -> tuple[str, KernelSignature]:
     m = ENTRY_RE.search(ptx)
     if not m:
@@ -120,23 +121,20 @@ def _parse_header_and_strip(ptx: str) -> tuple[str, KernelSignature]:
     slot_names = PARAM_RE.findall(ptx)
 
     default_names = [f"arg{i}" for i in range(len(proto_types))]
-    slot_to_human = {}
-    for s in slot_names:
-        idx_m = re.search(r"_param_(\d+)$", s)
-        if idx_m:
-            idx = int(idx_m.group(1))
-            name = (
-                default_names[idx] if idx < len(default_names) else f"arg{idx}"
-            )
-            slot_to_human[s] = name
+    slot_to_human = {
+        s: (default_names[int(re.search(r"_param_(\d+)$", s).group(1))] if re.search(r"_param_(\d+)$", s) else s)
+        for s in slot_names
+    }
 
-    body_start = ptx.index("{") + 1
-    body_end = ptx.rindex("}")
-    body = ptx[body_start:body_end].strip()
+    # 🔧 改為更保守的範圍提取：只擷取 .entry block 的最內層 {}
+    entry_start = ptx.find("{", m.end())
+    entry_end = ptx.find("}", entry_start)
+    if entry_start == -1 or entry_end == -1:
+        raise RuntimeError("Malformed PTX: cannot find .entry block body")
+    body = ptx[entry_start + 1:entry_end].strip()
+
     return body, KernelSignature(kernel, proto_types, slot_names, slot_to_human)
 
-
-# --------------------------------------------------------------------------
 def _build_parser() -> Lark:
     return Lark(
         GRAMMAR,
