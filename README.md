@@ -3,6 +3,8 @@
 
 An interactive playground to **visualize and learn GPU memory access patterns** for CUDA / Triton kernels.
 
+(Introduction in Chinese [Medium](https://medium.com/@ankerlin/%E4%BD%BF%E7%94%A8-op-gym-%E8%A6%96%E8%A6%BA%E5%8C%96%E7%90%86%E8%A7%A3-cuda-softmax-%E7%9A%84%E9%81%8B%E4%BD%9C%E5%8E%9F%E7%90%86-655fa0f0068f))
+
 ![CUDA-Gym Overview](./assets/public/demo-overview.png)
 
 
